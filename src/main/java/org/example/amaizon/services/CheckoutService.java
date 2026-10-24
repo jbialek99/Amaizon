@@ -41,33 +41,74 @@ public class CheckoutService {
             String billingTaxId,
             Carrier carrier
     ) {
-
-        if (cart == null) throw new IllegalArgumentException("cart required");
-        if (shipping == null) throw new IllegalArgumentException("shipping required");
-        if (billing == null) throw new IllegalArgumentException("billing required");
-        if (carrier == null) throw new IllegalArgumentException("carrier required");
-        if (contactEmail == null || contactEmail.isBlank()) throw new IllegalArgumentException("contactEmail required");
-
-        if (userOrNull != null && cart.getUser() == null) {
-            cart.assignToUser(userOrNull);
+        if (cart == null) {
+            throw new IllegalArgumentException("cart required");
+        }
+        if (shipping == null) {
+            throw new IllegalArgumentException("shipping required");
+        }
+        if (billing == null) {
+            throw new IllegalArgumentException("billing required");
+        }
+        if (carrier == null) {
+            throw new IllegalArgumentException("carrier required");
+        }
+        if (contactEmail == null || contactEmail.isBlank()) {
+            throw new IllegalArgumentException("contactEmail required");
+        }
+        if (cart.getId() <= 0) {
+            throw new IllegalArgumentException("Persisted cart required");
         }
 
-        CustomerType type = (billingCustomerType == null)
+        Cart lockedCart = cartRepository.findByIdForUpdate(cart.getId())
+                .orElseThrow(() -> new IllegalStateException("Cart not found"));
+
+        if (lockedCart.getStatus() != org.example.amaizon.model.enums.CartStatus.ACTIVE) {
+            throw new IllegalStateException("Cart already checked out");
+        }
+
+        if (lockedCart.getItems().isEmpty()) {
+            throw new IllegalStateException("Cannot checkout an empty cart");
+        }
+
+        if (userOrNull != null && lockedCart.getUser() == null) {
+            lockedCart.assignToUser(userOrNull);
+        }
+
+        if (userOrNull != null
+                && lockedCart.getUser() != null
+                && lockedCart.getUser().getId() != userOrNull.getId()) {
+            throw new IllegalStateException("Cart belongs to another user");
+        }
+
+        CustomerType type = billingCustomerType == null
                 ? CustomerType.INDIVIDUAL
                 : billingCustomerType;
 
-        for (CartItem item : cart.getItems()) {
+        for (CartItem item : lockedCart.getItems()) {
+            ProductCountry productCountry = item.getProductCountry();
+
+            if (productCountry == null
+                    || productCountry.getCountry() == null
+                    || productCountry.getCountry().getId() != lockedCart.getCountry().getId()) {
+                throw new IllegalStateException("Product belongs to another market");
+            }
+
+            if (item.getQuantity() <= 0) {
+                throw new IllegalStateException("Invalid cart quantity");
+            }
+
             ProductStock stock = stockRepository
-                    .findByProductCountryForUpdate(item.getProductCountry())
-                    .orElseThrow();
+                    .findByProductCountryForUpdate(productCountry)
+                    .orElseThrow(() -> new IllegalStateException("Product stock unavailable"));
 
             stock.reserve(item.getQuantity());
         }
 
         Order order = Order.create(
-                cart.getUser(),
-                cart.getCountry(),
-                cart.getCurrency(),
+                lockedCart.getUser(),
+                lockedCart.getCountry(),
+                lockedCart.getCurrency(),
                 contactEmail,
                 shipping,
                 billing,
@@ -76,8 +117,13 @@ public class CheckoutService {
                 billingTaxId
         );
 
-        for (CartItem item : cart.getItems()) {
+        for (CartItem item : lockedCart.getItems()) {
             ProductCountry pc = item.getProductCountry();
+
+            if (pc.getPrice() == null || pc.getPrice().getPrice() == null
+                    || pc.getPrice().getPrice().getValue() == null) {
+                throw new IllegalStateException("Product price unavailable");
+            }
 
             order.addItem(
                     pc.getProduct(),
@@ -89,11 +135,10 @@ public class CheckoutService {
         }
 
         order.setShippingCost(resolveShippingCost(carrier));
-
         order.createShipment(carrier, "PENDING");
 
-        cart.checkout();
-        cartRepository.save(cart);
+        lockedCart.checkout();
+        cartRepository.save(lockedCart);
 
         return orderRepository.save(order);
     }

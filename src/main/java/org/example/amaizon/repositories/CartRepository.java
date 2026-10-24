@@ -12,6 +12,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface CartRepository extends JpaRepository<Cart, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from Cart c where c.id = :id")
+    Optional<Cart> findByIdForUpdate(@Param("id") Long id);
+
 
 
     @Query("""
