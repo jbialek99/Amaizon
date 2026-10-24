@@ -117,7 +117,7 @@ public class SecurityConfig {
                         .clearAuthentication(true)
                         .deleteCookies("JSESSIONID")
                 )
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/cart/**"))
+                .csrf(Customizer.withDefaults())
                 .build();
     }
 }

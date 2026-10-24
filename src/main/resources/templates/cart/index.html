@@ -11,7 +11,7 @@
 <body class="page">
 <div class="container">
 
-    <div th:replace="fragments/navbar :: navbar"></div>
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
 
     <div class="card" style="margin-top:14px;">
         <h1 class="h1" th:text="#{cart.heading}">Your cart</h1>
@@ -32,79 +32,114 @@
 
         <div th:if="${cart != null && #lists.size(cart.items) > 0}">
             <div style="display:grid; gap:12px;">
-                <div class="card" style="padding:14px;" th:each="i : ${cart.items}">
+                <div class="card"
+                     style="padding:14px;"
+                     th:each="i : ${cart.items}">
+
                     <th:block th:with="
-                        stockRaw=${(i.productCountry != null && stockByPcId != null) ? stockByPcId[i.productCountry.stableId] : null},
-                        maxStock=${(stockRaw != null && stockRaw > 0) ? stockRaw : 1},
-                        safeQty=${(i.quantity != null && i.quantity > 0) ? i.quantity : 1}
-                    ">
+                        product=${i.product()},
+                        quantity=${i.quantity()},
+                        stock=${i.product().stock()},
+                        maxStock=${i.product().stock() > 0 ? i.product().stock() : 1}">
 
                         <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+
                             <div style="min-width:240px; flex:1;">
                                 <div style="font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                                    <span th:text="${(i.productCountry != null && i.productCountry.translation != null && i.productCountry.translation.displayName != null)
-
-                                        ? i.productCountry.translation.displayName.value
-                                        : #messages.msg('cart.itemFallback')}">Item</span>
+                                    <span th:text="${product.name() != null ? product.name() : #messages.msg('cart.itemFallback')}">
+                                        Item
+                                    </span>
                                 </div>
 
                                 <div class="muted small">
-                                    <span th:text="${(i.productCountry != null && i.productCountry.product != null && i.productCountry.product.sku != null)
-                                        ? i.productCountry.product.sku.value
-                                        : ''}">SKU</span>
+                                    <span th:text="${product.globalCode() != null ? product.globalCode() : ''}">
+                                        SKU
+                                    </span>
                                 </div>
 
                                 <div class="muted small">
                                     <span th:text="#{cart.stockLabel}">In stock:</span>
-                                    <strong th:text="${maxStock}">0</strong>
+                                    <strong th:text="${stock}">0</strong>
                                 </div>
                             </div>
 
                             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
-                                <form th:action="@{/cart/update}" method="post"
-                                      style="display:flex; gap:10px; align-items:center; margin:0;">
-                                    <input type="hidden" name="productStableId"
-                                           th:value="${(i.productCountry != null) ? i.productCountry.stableId : null}"/>
-                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
-                                    <input class="input" style="width:96px;"
+                                <form th:action="@{/cart/update}"
+                                      method="post"
+                                      style="display:flex; gap:10px; align-items:center; margin:0;">
+
+                                    <input type="hidden"
+                                           name="productCountryStableId"
+                                           th:value="${product.productCountryStableId()}"/>
+
+                                    <input type="hidden"
+                                           th:name="${_csrf.parameterName}"
+                                           th:value="${_csrf.token}"/>
+
+                                    <input class="input"
+                                           style="width:96px;"
                                            type="number"
                                            min="1"
                                            th:attr="max=${maxStock}"
-                                           step="1" inputmode="numeric"
+                                           step="1"
+                                           inputmode="numeric"
                                            name="qty"
-                                           th:value="${safeQty}"
+                                           th:value="${quantity}"
                                            th:aria-label="#{cart.qty}"/>
 
-                                    <button class="btn" type="submit" th:text="#{cart.update}">Update</button>
+                                    <button class="btn"
+                                            type="submit"
+                                            th:text="#{cart.update}">
+                                        Update
+                                    </button>
                                 </form>
 
-                                <form th:action="@{/cart/remove}" method="post" style="margin:0;">
-                                    <input type="hidden" name="productStableId"
-                                           th:value="${(i.productCountry != null) ? i.productCountry.stableId : null}"/>
-                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                                    <button class="btn danger" type="submit" th:text="#{cart.remove}">Remove</button>
+                                <form th:action="@{/cart/remove}"
+                                      method="post"
+                                      style="margin:0;">
+
+                                    <input type="hidden"
+                                           name="productCountryStableId"
+                                           th:value="${product.productCountryStableId()}"/>
+
+                                    <input type="hidden"
+                                           th:name="${_csrf.parameterName}"
+                                           th:value="${_csrf.token}"/>
+
+                                    <button class="btn danger"
+                                            type="submit"
+                                            th:text="#{cart.remove}">
+                                        Remove
+                                    </button>
                                 </form>
                             </div>
                         </div>
 
                         <div style="display:flex; justify-content:space-between; margin-top:10px; gap:12px; flex-wrap:wrap;">
+
                             <div class="muted small">
                                 <span th:text="#{cart.unitPrice}">Unit:</span>
-                                <strong th:text="${(i.productCountry != null && i.productCountry.price != null && i.productCountry.price.priceValue != null)
-                                    ? #numbers.formatDecimal(i.productCountry.price.priceValue, 1, 'COMMA', 2, 'POINT')
-                                    : '0.00'}">0.00</strong>
-                                <span th:text="${currencySymbol}">zł</span>
+
+                                <strong th:text="${product.price() != null
+                                    ? #numbers.formatDecimal(product.price(), 1, 'COMMA', 2, 'POINT')
+                                    : '0.00'}">
+                                    0.00
+                                </strong>
+
+                                <span th:text="${currencySymbol}">PLN</span>
                             </div>
 
                             <div class="price">
-                                <span th:text="${(i.productCountry != null && i.productCountry.price != null && i.productCountry.price.priceValue != null)
+                                <span th:text="${product.price() != null
                                     ? #numbers.formatDecimal(
-                                          i.productCountry.price.priceValue.multiply(T(java.math.BigDecimal).valueOf(i.quantity.longValue())),
-                                          1, 'COMMA', 2, 'POINT'
-                                      )
-                                    : '0.00'}">0.00</span>
-                                <span th:text="${currencySymbol}">zł</span>
+                                        product.price().multiply(T(java.math.BigDecimal).valueOf(quantity.longValue())),
+                                        1, 'COMMA', 2, 'POINT')
+                                    : '0.00'}">
+                                    0.00
+                                </span>
+
+                                <span th:text="${currencySymbol}">PLN</span>
                             </div>
                         </div>
 
@@ -115,11 +150,19 @@
             <div class="hr"></div>
 
             <div class="cart-footer">
-                <a class="btn" th:href="@{/}" th:text="#{cart.continueShopping}">Continue shopping</a>
-                <a class="btn primary" th:href="@{/checkout}" th:text="#{cart.checkout}">Proceed to checkout</a>
+                <a class="btn"
+                   th:href="@{/}"
+                   th:text="#{cart.continueShopping}">
+                    Continue shopping
+                </a>
+
+                <a class="btn primary"
+                   th:href="@{/checkout}"
+                   th:text="#{cart.checkout}">
+                    Proceed to checkout
+                </a>
             </div>
         </div>
-
     </div>
 </div>
 </body>
