@@ -11,7 +11,7 @@ import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ProductCountryBasicTest {
+class ProductCountryTest {
 
     @Test
     void activateOrThrow_withoutTranslation_throws() {

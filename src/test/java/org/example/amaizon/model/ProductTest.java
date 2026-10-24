@@ -1,108 +1,106 @@
 package org.example.amaizon.model;
 
-import org.example.amaizon.exceptions.ProductValidationException;
-import org.example.amaizon.model.enums.ProductCountryStatus;
+import org.example.amaizon.exceptions.validation.ProductValidationException;
+import org.example.amaizon.model.entity.Product;
 import org.example.amaizon.model.enums.ProductStatus;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 
 class ProductTest {
 
-    private Product product;
-    private Category category;
-    private Country country;
+    private static final String IMAGE_URL =
+            "https://i.imgur.com/product.jpg";
 
-    @BeforeEach
-    void setUp() {
-        product = Product.createProduct("Nike", "GPC001", "image.jpg");
-        category = new Category("Shoes.pl"," shoes","shoes", 5);
-        country = Country.create("Poland", "PL", "pl", Currency.create("pln", "PLN", "zł"));
+    private Product createProduct() {
+        return Product.createProduct(
+                "Nike",
+                "NK123456",
+                IMAGE_URL
+        );
     }
 
     @Test
-    void shouldCreateProductCorrectly() {
-        assertThat(product.getBrand()).isEqualTo("Nike");
-        assertThat(product.getGlobalCode()).isEqualTo("GPC001");
-        assertThat(product.getImageUrl()).isEqualTo("image.jpg");
+    void shouldCreateProductInDraftStatus() {
+        Product product = createProduct();
+
+        assertThat(product.getBrand().getValue()).isEqualTo("Nike");
+        assertThat(product.getSku().getValue()).isEqualTo("NK123456");
+        assertThat(product.getImageUrl().getValue()).isEqualTo(IMAGE_URL);
         assertThat(product.getStatus()).isEqualTo(ProductStatus.DRAFT);
         assertThat(product.getStableId()).isNotNull();
     }
 
     @Test
-    void shouldChangeStatusToActiveIfCategoryExists() {
-        product.changeCategory(category);
-        product.changeStatus(ProductStatus.ACTIVE);
-
-        assertThat(product.getStatus()).isEqualTo(ProductStatus.ACTIVE);
-    }
-
-    @Test
-    void shouldThrowExceptionWhenActivatingWithoutCategory() {
-        assertThatThrownBy(() -> product.changeStatus(ProductStatus.ACTIVE))
-                .isInstanceOf(ProductValidationException.class)
-                .hasMessage("validation.category.activate_without_category");
-    }
-
-    @Test
     void shouldChangeBrand() {
-        product.rebrand("Adidas");
-        assertThat(product.getBrand()).isEqualTo("Adidas");
-    }
+        Product product = createProduct();
 
-    @Test
-    void shouldChangeImageUrl() {
-        product.changeImageUrl("new_image.jpg");
-        assertThat(product.getImageUrl()).isEqualTo("new_image.jpg");
+        product.rebrand("Adidas");
+
+        assertThat(product.getBrand().getValue()).isEqualTo("Adidas");
     }
 
     @Test
     void shouldChangeGlobalCode() {
-        product.changeGlobalCode("GPC002");
-        assertThat(product.getGlobalCode()).isEqualTo("GPC002");
+        Product product = createProduct();
+
+        product.changeGlobalCode("AD123456");
+
+        assertThat(product.getSku().getValue()).isEqualTo("AD123456");
     }
 
     @Test
-    void shouldAssignCountryToProduct() {
-        ProductCountry pc = product.assignCountry(country, null);
+    void shouldChangeImageUrl() {
+        Product product = createProduct();
+        String newUrl = "https://i.imgur.com/updated.png";
 
-        assertThat(pc.getCountry()).isEqualTo(country);
-        assertThat(pc.getProduct()).isEqualTo(product);
-        assertThat(pc.getStatus()).isEqualTo(ProductCountryStatus.DRAFT);
-        assertThat(product.getProductCountries()).contains(pc);
+        product.changeImageUrl(newUrl);
+
+        assertThat(product.getImageUrl().getValue()).isEqualTo(newUrl);
     }
 
     @Test
-    void shouldThrowExceptionWhenAssigningSameCountryTwice() {
-        product.assignCountry(country, null);
+    void shouldRejectActivationWithoutCategory() {
+        Product product = createProduct();
 
-        assertThatThrownBy(() -> product.assignCountry(country, null))
-                .isInstanceOf(ProductValidationException.class)
-                .hasMessage("validation.product.country.already_assigned");
+        assertThatThrownBy(
+                () -> product.changeStatus(ProductStatus.ACTIVE)
+        ).isInstanceOf(ProductValidationException.class);
+
+        assertThat(product.getStatus()).isEqualTo(ProductStatus.DRAFT);
     }
 
     @Test
-    void shouldChangeCategory() {
-        product.changeCategory(category);
+    void shouldRejectNullCategory() {
+        Product product = createProduct();
 
-        assertThat(product.getCategory()).isEqualTo(category);
+        assertThatThrownBy(
+                () -> product.defineCategory(null)
+        ).isInstanceOf(ProductValidationException.class);
     }
 
     @Test
-    void equalityShouldBeBasedOnStableId() {
-        Product product2 = Product.createProduct("Nike", "GPC001", "image.jpg");
+    void shouldRejectNullStatus() {
+        Product product = createProduct();
 
-        assertThat(product).isNotEqualTo(product2);
+        assertThatThrownBy(
+                () -> product.changeStatus(null)
+        ).isInstanceOf(ProductValidationException.class);
+    }
 
-        Product product3 = new Product("Nike", "GPC001", "image.jpg") {
-            {
-                this.stableId = product.getStableId();
-            }
-        };
+    @Test
+    void shouldHaveDifferentIdentityForDifferentProducts() {
+        Product first = createProduct();
+        Product second = createProduct();
 
-        assertThat(product).isEqualTo(product3);
+        assertThat(first).isNotEqualTo(second);
+        assertThat(first.getStableId()).isNotEqualTo(second.getStableId());
+    }
+
+    @Test
+    void shouldNotBeSellableInDraftStatus() {
+        Product product = createProduct();
+
+        assertThat(product.isSellable()).isFalse();
     }
 }

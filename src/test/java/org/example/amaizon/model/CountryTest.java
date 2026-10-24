@@ -55,7 +55,8 @@ class CountryTest {
         Domain d = Domain.create("amaizon.pl", "pl", pl);
         d.activate();
 
-        pl.deactivate();
+        d.deactivate();
+        assertEquals(DomainStatus.INACTIVE, d.getStatus());
         assertEquals(CountryStatus.INACTIVE, pl.getStatus());
 
         d.activate();
