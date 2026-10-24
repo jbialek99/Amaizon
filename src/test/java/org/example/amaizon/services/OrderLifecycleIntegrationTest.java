@@ -201,6 +201,116 @@ class OrderLifecycleIntegrationTest {
         assertEquals(testOrder.availableBefore() - 1, available(testOrder.stockId()));
         assertEquals(testOrder.reservedBefore() + 1, reserved(testOrder.stockId()));
     }
+    @Test
+    void failedPaymentCanBeRetriedWithoutChangingStock() {
+        TestOrder testOrder = createTestOrder();
+
+        lifecycleService.confirm(testOrder.stableId());
+        lifecycleService.beginPayment(testOrder.stableId());
+        entityManager.flush();
+
+        assertEquals("CONFIRMED", orderStatus(testOrder.orderId()));
+
+        lifecycleService.failPayment(testOrder.stableId());
+        entityManager.flush();
+
+        assertEquals(
+                "FAILED",
+                paymentStatus(testOrder.orderId())
+        );
+
+        assertEquals(
+                testOrder.availableBefore() - 1,
+                available(testOrder.stockId())
+        );
+
+        assertEquals(
+                testOrder.reservedBefore() + 1,
+                reserved(testOrder.stockId())
+        );
+
+        lifecycleService.retryPayment(testOrder.stableId());
+        entityManager.flush();
+
+        assertEquals(
+                "PENDING",
+                paymentStatus(testOrder.orderId())
+        );
+
+        assertEquals("CONFIRMED", orderStatus(testOrder.orderId()));
+        assertEquals("CREATED", shipmentStatus(testOrder.orderId()));
+    }
+
+    @Test
+    void failedPaymentOrderCanBeCancelledAndStockReleased() {
+        TestOrder testOrder = createTestOrder();
+
+        lifecycleService.confirm(testOrder.stableId());
+        lifecycleService.beginPayment(testOrder.stableId());
+        lifecycleService.failPayment(testOrder.stableId());
+
+        lifecycleService.cancel(testOrder.stableId());
+        entityManager.flush();
+
+        assertEquals("CANCELLED", orderStatus(testOrder.orderId()));
+        assertEquals("CANCELLED", shipmentStatus(testOrder.orderId()));
+        assertEquals("FAILED", paymentStatus(testOrder.orderId()));
+
+        assertEquals(
+                testOrder.availableBefore(),
+                available(testOrder.stockId())
+        );
+
+        assertEquals(
+                testOrder.reservedBefore(),
+                reserved(testOrder.stockId())
+        );
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> lifecycleService.retryPayment(testOrder.stableId())
+        );
+    }
+
+    private String paymentStatus(long orderId) {
+        return jdbc.queryForObject(
+                "SELECT status FROM payments WHERE order_id = ?",
+                String.class,
+                orderId
+        );
+    }
+    @Test
+    void cancellingPendingPaymentClosesPaymentAndRestoresStock() {
+        TestOrder testOrder = createTestOrder();
+
+        lifecycleService.confirm(testOrder.stableId());
+        lifecycleService.beginPayment(testOrder.stableId());
+        entityManager.flush();
+
+        assertEquals("PENDING", paymentStatus(testOrder.orderId()));
+
+        lifecycleService.cancel(testOrder.stableId());
+        entityManager.flush();
+
+        assertEquals("CANCELLED", orderStatus(testOrder.orderId()));
+        assertEquals("CANCELLED", shipmentStatus(testOrder.orderId()));
+        assertEquals("FAILED", paymentStatus(testOrder.orderId()));
+
+        assertEquals(
+                testOrder.availableBefore(),
+                available(testOrder.stockId())
+        );
+
+        assertEquals(
+                testOrder.reservedBefore(),
+                reserved(testOrder.stockId())
+        );
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> lifecycleService.retryPayment(testOrder.stableId())
+        );
+    }
     private TestOrder createTestOrder() {
         Long stockId = jdbc.queryForObject(
                 """

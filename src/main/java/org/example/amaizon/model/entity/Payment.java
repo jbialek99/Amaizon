@@ -180,6 +180,19 @@ public class Payment extends AuditableEntity {
         this.status = PaymentStatus.FAILED;
     }
 
+    public void retry() {
+        if (status != PaymentStatus.FAILED) {
+            throw new IllegalStateException("Only failed payments can be retried");
+        }
+
+        if (order == null || order.getStatus() != org.example.amaizon.model.enums.OrderStatus.CONFIRMED) {
+            throw new IllegalStateException("Order cannot retry payment");
+        }
+
+        this.status = PaymentStatus.PENDING;
+        this.transactionId = null;
+        this.paidAt = null;
+    }
     public void markRefunded() {
         if (status != PaymentStatus.SUCCESS) ex(PAYMENT_REFUND_ONLY_AFTER_SUCCESS);
         this.status = PaymentStatus.REFUNDED;

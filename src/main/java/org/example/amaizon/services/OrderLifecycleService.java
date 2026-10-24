@@ -53,6 +53,13 @@ public class OrderLifecycleService {
             lockStock(order, item).release(item.getQuantity());
         }
 
+        org.example.amaizon.model.entity.Payment payment = order.getPayment();
+
+        if (payment != null
+                && payment.getStatus() == org.example.amaizon.model.enums.PaymentStatus.PENDING) {
+            payment.markFailed("Order cancelled");
+        }
+
         shipment.cancel();
         order.cancel("Order cancelled");
     }
@@ -98,6 +105,73 @@ public class OrderLifecycleService {
         }
 
         shipment.markDelivered();
+    }
+    @Transactional
+    public void confirm(UUID stableId) {
+        Order order = loadLocked(stableId);
+        order.confirm();
+    }
+
+    @Transactional
+    public void beginPayment(UUID stableId) {
+        Order order = loadLocked(stableId);
+
+        if (order.getStatus() != OrderStatus.CONFIRMED) {
+            throw new IllegalStateException("Order must be confirmed");
+        }
+
+        if (order.getShipment() == null
+                || order.getShipment().getStatus() != ShipmentStatus.CREATED) {
+            throw new IllegalStateException("Shipment is not ready");
+        }
+
+        order.startPayment(null);
+    }
+
+    @Transactional
+    public void failPayment(UUID stableId) {
+        Order order = loadLocked(stableId);
+
+        if (order.getStatus() != OrderStatus.CONFIRMED) {
+            throw new IllegalStateException("Only confirmed orders can fail payment");
+        }
+
+        if (order.getShipment() == null
+                || order.getShipment().getStatus() != ShipmentStatus.CREATED) {
+            throw new IllegalStateException("Shipment is not ready");
+        }
+
+        org.example.amaizon.model.entity.Payment payment = order.getPayment();
+
+        if (payment == null
+                || payment.getStatus() != org.example.amaizon.model.enums.PaymentStatus.PENDING) {
+            throw new IllegalStateException("Pending payment required");
+        }
+
+        payment.markFailed("Payment unsuccessful");
+    }
+
+    @Transactional
+    public void retryPayment(UUID stableId) {
+        Order order = loadLocked(stableId);
+
+        if (order.getStatus() != OrderStatus.CONFIRMED) {
+            throw new IllegalStateException("Order must be confirmed");
+        }
+
+        if (order.getShipment() == null
+                || order.getShipment().getStatus() != ShipmentStatus.CREATED) {
+            throw new IllegalStateException("Shipment is not ready");
+        }
+
+        org.example.amaizon.model.entity.Payment payment = order.getPayment();
+
+        if (payment == null
+                || payment.getStatus() != org.example.amaizon.model.enums.PaymentStatus.FAILED) {
+            throw new IllegalStateException("Failed payment required");
+        }
+
+        payment.retry();
     }
     private Order loadLocked(UUID stableId) {
         if (stableId == null) {

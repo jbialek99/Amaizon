@@ -213,4 +213,101 @@ class OrderLifecycleServiceTest {
         verifyNoInteractions(stocks);
     }
 
+    @Test
+    void confirmingNewOrderDelegatesToDomain() {
+        service.confirm(stableId);
+        verify(order).confirm();
+    }
+
+    @Test
+    void beginPaymentRequiresConfirmedOrder() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> service.beginPayment(stableId)
+        );
+        verify(order, never()).startPayment(any());
+    }
+
+    @Test
+    void confirmedOrderCanBeginPayment() {
+        when(order.getStatus()).thenReturn(OrderStatus.CONFIRMED);
+
+        service.beginPayment(stableId);
+
+        verify(order).startPayment(null);
+    }
+
+    @Test
+    void failedPaymentCanBeRecorded() {
+        Payment payment = mock(Payment.class);
+        when(order.getStatus()).thenReturn(OrderStatus.CONFIRMED);
+        when(order.getPayment()).thenReturn(payment);
+        when(payment.getStatus()).thenReturn(org.example.amaizon.model.enums.PaymentStatus.PENDING);
+
+        service.failPayment(stableId);
+
+        verify(payment).markFailed("Payment unsuccessful");
+        verifyNoInteractions(stocks);
+    }
+
+    @Test
+    void successfulPaymentCannotBeMarkedFailed() {
+        Payment payment = mock(Payment.class);
+        when(order.getStatus()).thenReturn(OrderStatus.CONFIRMED);
+        when(order.getPayment()).thenReturn(payment);
+        when(payment.getStatus()).thenReturn(org.example.amaizon.model.enums.PaymentStatus.SUCCESS);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> service.failPayment(stableId)
+        );
+
+        verify(payment, never()).markFailed(anyString());
+    }
+
+    @Test
+    void failedPaymentCanBeRetried() {
+        Payment payment = mock(Payment.class);
+        when(order.getStatus()).thenReturn(OrderStatus.CONFIRMED);
+        when(order.getPayment()).thenReturn(payment);
+        when(payment.getStatus()).thenReturn(org.example.amaizon.model.enums.PaymentStatus.FAILED);
+
+        service.retryPayment(stableId);
+
+        verify(payment).retry();
+        verifyNoInteractions(stocks);
+    }
+
+    @Test
+    void pendingPaymentCannotBeRetried() {
+        Payment payment = mock(Payment.class);
+        when(order.getStatus()).thenReturn(OrderStatus.CONFIRMED);
+        when(order.getPayment()).thenReturn(payment);
+        when(payment.getStatus()).thenReturn(org.example.amaizon.model.enums.PaymentStatus.PENDING);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> service.retryPayment(stableId)
+        );
+
+        verify(payment, never()).retry();
+    }
+
+    @Test
+    void cancellingPendingPaymentMarksItFailed() {
+        Payment payment = mock(Payment.class);
+
+        when(order.getPayment()).thenReturn(payment);
+        when(payment.getStatus()).thenReturn(
+                org.example.amaizon.model.enums.PaymentStatus.PENDING
+        );
+
+        service.cancel(stableId);
+
+        verify(stock).release(2);
+        verify(payment).markFailed("Order cancelled");
+        verify(shipment).cancel();
+        verify(order).cancel("Order cancelled");
+    }
+
 }
