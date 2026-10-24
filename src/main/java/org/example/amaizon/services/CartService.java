@@ -175,6 +175,14 @@ public class CartService {
                 .findEntityByProductCountryStableId(productCountryStableId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not available"));
 
+        if (productCountry.getCountry() == null
+                || productCountry.getCountry().getId() != market.getCountry().getId()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Product not available in current market"
+            );
+        }
+
         long available = availableStock(productCountry);
 
         if (available <= 0) {
