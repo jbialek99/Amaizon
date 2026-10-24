@@ -211,7 +211,7 @@
                         <label class="label" th:text="#{checkout.delivery.carrier}">Carrier</label>
                         <select class="input" id="shippingCarrierSelect" th:field="*{shippingCarrier}" required>
                             <option value="" th:text="#{checkout.delivery.choose}">-- choose --</option>
-                            <option th:each="c : ${T(org.example.amaizon.model.enums.Carrier).values()}"
+                            <option th:each="c : ${shippingCostByCarrier.keySet()}"
                                     th:value="${c}"
                                     th:text="${#messages.msg('carrier.' + c.name())}">
                                 DHL

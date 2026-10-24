@@ -12,6 +12,7 @@ import org.example.amaizon.model.enums.Carrier;
 import org.example.amaizon.security.CustomUserDetails;
 import org.example.amaizon.services.CartService;
 import org.example.amaizon.services.CheckoutService;
+import org.example.amaizon.services.ShippingPricing;
 import org.example.amaizon.web.GuestTokenCookie;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -20,7 +21,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -29,10 +29,16 @@ public class CheckoutController {
 
     private final CartService cartService;
     private final CheckoutService checkoutService;
+    private final ShippingPricing shippingPricing;
 
-    public CheckoutController(CartService cartService, CheckoutService checkoutService) {
+    public CheckoutController(
+            CartService cartService,
+            CheckoutService checkoutService,
+            ShippingPricing shippingPricing
+    ) {
         this.cartService = cartService;
         this.checkoutService = checkoutService;
+        this.shippingPricing = shippingPricing;
     }
 
     @GetMapping("/checkout")
@@ -45,7 +51,7 @@ public class CheckoutController {
 
         addCheckoutUiFlags(model, market);
 
-        Map<Carrier, BigDecimal> shippingCostByCarrier = addShippingOptions(model);
+        Map<Carrier, BigDecimal> shippingCostByCarrier = addShippingOptions(model, market);
 
         User user = (principal != null) ? principal.getUser() : null;
         Cart cart = cartService.getOrCreateCart(market, user, req, res);
@@ -79,7 +85,7 @@ public class CheckoutController {
 
         addCheckoutUiFlags(model, market);
 
-        Map<Carrier, BigDecimal> shippingCostByCarrier = addShippingOptions(model);
+        Map<Carrier, BigDecimal> shippingCostByCarrier = addShippingOptions(model, market);
 
         User user = (principal != null) ? principal.getUser() : null;
         Cart cart = cartService.getOrCreateCart(market, user, req, res);
@@ -105,7 +111,7 @@ public class CheckoutController {
 
         addCheckoutUiFlags(model, market);
 
-        Map<Carrier, BigDecimal> shippingCostByCarrier = addShippingOptions(model);
+        Map<Carrier, BigDecimal> shippingCostByCarrier = addShippingOptions(model, market);
 
         User user = (principal != null) ? principal.getUser() : null;
         Cart cart = cartService.getOrCreateCart(market, user, req, res);
@@ -171,12 +177,12 @@ public class CheckoutController {
         model.addAttribute("postalLabelKey", isUS ? "checkout.zip" : "checkout.postal");
     }
 
-    private static Map<Carrier, BigDecimal> addShippingOptions(Model model) {
-        Map<Carrier, BigDecimal> map = new EnumMap<>(Carrier.class);
-        map.put(Carrier.INPOST, new BigDecimal("12.99"));
-        map.put(Carrier.DPD, new BigDecimal("19.99"));
-        map.put(Carrier.DHL, new BigDecimal("24.99"));
-        map.put(Carrier.GLS, new BigDecimal("18.99"));
+    private Map<Carrier, BigDecimal> addShippingOptions(
+            Model model,
+            MarketContextDto market
+    ) {
+        String countryCode = market.getCountry().getCode().getValue();
+        Map<Carrier, BigDecimal> map = shippingPricing.availableOptions(countryCode);
         model.addAttribute("shippingCostByCarrier", map);
         return map;
     }

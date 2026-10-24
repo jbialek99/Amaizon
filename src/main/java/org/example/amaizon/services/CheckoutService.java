@@ -10,7 +10,7 @@ import org.example.amaizon.repositories.ProductStockRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+
 
 @Service
 public class CheckoutService {
@@ -18,15 +18,18 @@ public class CheckoutService {
     private final CartRepository cartRepository;
     private final ProductStockRepository stockRepository;
     private final OrderRepository orderRepository;
+    private final ShippingPricing shippingPricing;
 
     public CheckoutService(
             CartRepository cartRepository,
             ProductStockRepository stockRepository,
-            OrderRepository orderRepository
+            OrderRepository orderRepository,
+            ShippingPricing shippingPricing
     ) {
         this.cartRepository = cartRepository;
         this.stockRepository = stockRepository;
         this.orderRepository = orderRepository;
+        this.shippingPricing = shippingPricing;
     }
 
     @Transactional
@@ -134,7 +137,7 @@ public class CheckoutService {
             );
         }
 
-        order.setShippingCost(resolveShippingCost(carrier));
+        order.setShippingCost(shippingPricing.price(lockedCart.getCountry().getCode().getValue(), carrier));
         order.createShipment(carrier, "PENDING");
 
         lockedCart.checkout();
@@ -143,16 +146,7 @@ public class CheckoutService {
         return orderRepository.save(order);
     }
 
-    private BigDecimal resolveShippingCost(Carrier carrier) {
-        return switch (carrier) {
-            case INPOST -> new BigDecimal("12.99");
-            case DPD -> new BigDecimal("19.99");
-            case DHL -> new BigDecimal("24.99");
-            case GLS -> new BigDecimal("18.99");
-        };
-    }
-
-    private String resolveName(ProductCountry pc) {
+private String resolveName(ProductCountry pc) {
         return pc.getTranslation() != null
                 ? pc.getTranslation().getDisplayName().getValue()
                 : "Product";

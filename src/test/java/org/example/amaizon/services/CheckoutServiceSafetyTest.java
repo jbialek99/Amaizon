@@ -20,11 +20,7 @@ class CheckoutServiceSafetyTest {
     private final ProductStockRepository stockRepository = mock(ProductStockRepository.class);
     private final OrderRepository orderRepository = mock(OrderRepository.class);
 
-    private final CheckoutService service = new CheckoutService(
-            cartRepository,
-            stockRepository,
-            orderRepository
-    );
+    private final CheckoutService service = new CheckoutService(cartRepository, stockRepository, orderRepository, new ShippingPricing());
 
     @Test
     void rejectsAlreadyCheckedOutCart() {
