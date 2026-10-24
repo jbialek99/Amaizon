@@ -76,7 +76,7 @@ public class StaffProductsController {
                                        @ModelAttribute("market") MarketContextDto market) {
         model.addAttribute("market", market);
 
-        model.addAttribute("products", productCountryAdminService.listAllGlobalProducts());
+        model.addAttribute("products", productCountryAdminService.listAllGlobalProducts(market));
 
         model.addAttribute("alreadyAssigned",
                 productCountryAdminService.findAlreadyAssignedProductStableIds(market));
@@ -91,7 +91,7 @@ public class StaffProductsController {
                                  Model model) {
         model.addAttribute("market", market);
 
-        Product product = productCountryAdminService.getGlobalProduct(productStableId);
+        Product product = productCountryAdminService.getGlobalProduct(productStableId, market);
         model.addAttribute("product", product);
 
         CreateProductCountryForm form = productCountryAdminService.buildDefaultForm(market);
@@ -110,7 +110,7 @@ public class StaffProductsController {
             Model model
     ) {
         model.addAttribute("market", market);
-        model.addAttribute("product", productCountryAdminService.getGlobalProduct(productStableId));
+        model.addAttribute("product", productCountryAdminService.getGlobalProduct(productStableId, market));
 
         if (br.hasErrors()) {
             return "staff/product-country-add";

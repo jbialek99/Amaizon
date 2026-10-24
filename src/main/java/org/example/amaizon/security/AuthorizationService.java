@@ -5,10 +5,17 @@ import org.example.amaizon.model.entity.User;
 import org.example.amaizon.model.entity.UserRole;
 import org.example.amaizon.model.enums.RoleKey;
 import org.example.amaizon.model.enums.RoleScope;
+import org.example.amaizon.model.enums.UserRoleStatus;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 
+@Component
 public class AuthorizationService {
+
+    public boolean canManageGlobalProducts(User user) {
+        return hasGlobalRole(user, RoleKey.HEAD_ADMIN);
+    }
 
     public boolean canActInCountry(User user, long countryId) {
         if (hasGlobalRole(user, RoleKey.HEAD_ADMIN)) return true;
@@ -32,40 +39,56 @@ public class AuthorizationService {
                 || hasRoleInCountry(user, RoleKey.COUNTRY_ADMIN, countryId);
     }
 
-
-
     private boolean hasGlobalRole(User user, RoleKey key) {
+        if (user == null) return false;
+
         Instant now = Instant.now();
+
         return user.getUserRoles().stream()
                 .filter(ur -> isActiveNow(ur, now))
                 .map(UserRole::getRole)
-                .anyMatch(r -> r.getScope() == RoleScope.GLOBAL && r.getKey() == key);
+                .anyMatch(role -> role != null
+                        && role.getScope() == RoleScope.GLOBAL
+                        && role.getKey() == key);
     }
 
     private boolean hasAnyRoleInCountry(User user, long countryId) {
+        if (user == null) return false;
+
         Instant now = Instant.now();
+
         return user.getUserRoles().stream()
                 .filter(ur -> isActiveNow(ur, now))
                 .map(UserRole::getRole)
-                .anyMatch(r -> isCountryRoleFor(r, countryId));
+                .anyMatch(role -> isCountryRoleFor(role, countryId)
+                        && role.getKey() != RoleKey.USER);
     }
 
     private boolean hasRoleInCountry(User user, RoleKey key, long countryId) {
+        if (user == null) return false;
+
         Instant now = Instant.now();
+
         return user.getUserRoles().stream()
                 .filter(ur -> isActiveNow(ur, now))
                 .map(UserRole::getRole)
-                .anyMatch(r -> isCountryRoleFor(r, countryId) && r.getKey() == key);
+                .anyMatch(role -> isCountryRoleFor(role, countryId)
+                        && role.getKey() == key);
     }
 
     private boolean isCountryRoleFor(Role role, long countryId) {
-        return role.getScope() == RoleScope.COUNTRY
+        return role != null
+                && role.getScope() == RoleScope.COUNTRY
                 && role.getCountry() != null
                 && role.getCountry().getId() == countryId;
     }
 
-    private boolean isActiveNow(UserRole ur, Instant now) {
-        if (ur.getValidFrom() != null && ur.getValidFrom().isAfter(now)) return false;
-        return ur.getValidTo() == null || !ur.getValidTo().isBefore(now);
+    private boolean isActiveNow(UserRole assignment, Instant now) {
+        return assignment != null
+                && assignment.getStatus() == UserRoleStatus.ACTIVE
+                && assignment.getValidFrom() != null
+                && !now.isBefore(assignment.getValidFrom())
+                && (assignment.getValidTo() == null
+                    || !now.isAfter(assignment.getValidTo()));
     }
 }

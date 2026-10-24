@@ -8,7 +8,9 @@ import org.springframework.context.annotation.Configuration;
 public class StaffFilterConfig {
 
     @Bean
-    public StaffMarketAccessFilter staffMarketAccessFilter(MarketResolver marketResolver) {
-        return new StaffMarketAccessFilter(marketResolver);
+    public StaffMarketAccessFilter staffMarketAccessFilter(
+            MarketResolver marketResolver,
+            AuthorizationService authorizationService) {
+        return new StaffMarketAccessFilter(marketResolver, authorizationService);
     }
 }

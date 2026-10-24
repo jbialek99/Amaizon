@@ -25,9 +25,12 @@ import java.time.Instant;
 public class StaffMarketAccessFilter extends OncePerRequestFilter {
 
     private final MarketResolver marketResolver;
+    private final AuthorizationService authorizationService;
 
-    public StaffMarketAccessFilter(MarketResolver marketResolver) {
+    public StaffMarketAccessFilter(MarketResolver marketResolver,
+                                   AuthorizationService authorizationService) {
         this.marketResolver = marketResolver;
+        this.authorizationService = authorizationService;
     }
 
     @Override
@@ -61,10 +64,8 @@ public class StaffMarketAccessFilter extends OncePerRequestFilter {
         String marketCountryCode = market.getCountry().getCode().getValue();
         User user = cud.getUser();
 
-        boolean allowed = user.getUserRoles().stream()
-                .filter(this::isActiveNow)
-                .map(UserRole::getRole)
-                .anyMatch(role -> isAllowedOnMarket(role, marketCountryCode));
+        boolean allowed = authorizationService.canActInCountry(
+                user, market.getCountry().getId());
 
         if (!allowed) {
             new SecurityContextLogoutHandler().logout(request, response, auth);
@@ -75,40 +76,4 @@ public class StaffMarketAccessFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private boolean isAllowedOnMarket(Role role, String marketCountryCode) {
-        if (role == null || role.getKey() == null || role.getScope() == null) {
-            return false;
-        }
-
-        if (role.getKey() == RoleKey.HEAD_ADMIN
-                && role.getScope() == RoleScope.GLOBAL) {
-            return true;
-        }
-
-        if (role.getScope() != RoleScope.COUNTRY) {
-            return false;
-        }
-
-        if (role.getKey() == RoleKey.USER || role.getCountry() == null) {
-            return false;
-        }
-
-        String roleCountryCode = role.getCountry().getCode().getValue();
-
-        return marketCountryCode.equalsIgnoreCase(roleCountryCode);
-    }
-
-    private boolean isActiveNow(UserRole userRole) {
-        if (userRole == null || userRole.getStatus() != UserRoleStatus.ACTIVE) {
-            return false;
-        }
-
-        Instant now = Instant.now();
-
-        if (userRole.getValidFrom() != null && now.isBefore(userRole.getValidFrom())) {
-            return false;
-        }
-
-        return userRole.getValidTo() == null || !now.isAfter(userRole.getValidTo());
-    }
 }

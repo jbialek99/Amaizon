@@ -2,6 +2,7 @@ package org.example.amaizon.services;
 
 import lombok.RequiredArgsConstructor;
 import org.example.amaizon.model.dtos.CreateProductCountryForm;
+import org.example.amaizon.security.StaffAuthorizationGuard;
 import org.example.amaizon.model.dtos.MarketContextDto;
 import org.example.amaizon.model.entity.Country;
 import org.example.amaizon.model.entity.Product;
@@ -30,17 +31,21 @@ public class StaffProductCountryAdminService {
     private final CountryRepository countryRepository;
     private final ProductCountryRepository productCountryRepository;
     private final ProductStockRepository productStockRepository;
+    private final StaffAuthorizationGuard authorizationGuard;
 
-    public List<Product> listAllGlobalProducts() {
+    public List<Product> listAllGlobalProducts(MarketContextDto market) {
+        authorizationGuard.requireMarketProductAdmin(market);
         return productRepository.findAll();
     }
 
-    public Product getGlobalProduct(UUID productStableId) {
+    public Product getGlobalProduct(UUID productStableId, MarketContextDto market) {
+        authorizationGuard.requireMarketProductAdmin(market);
         return productRepository.findByStableId(productStableId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found: " + productStableId));
     }
 
     public CreateProductCountryForm buildDefaultForm(MarketContextDto market) {
+        authorizationGuard.requireMarketProductAdmin(market);
         CreateProductCountryForm f = new CreateProductCountryForm();
         f.setInitialQuantityAvailable(0);
         return f;
@@ -48,6 +53,7 @@ public class StaffProductCountryAdminService {
 
 
     public Set<UUID> findAlreadyAssignedProductStableIds(MarketContextDto market) {
+        authorizationGuard.requireMarketProductAdmin(market);
         long countryId = market.getCountry().getId();
         return new HashSet<>(productCountryRepository.findProductStableIdsByCountryId(countryId));
     }
@@ -55,7 +61,8 @@ public class StaffProductCountryAdminService {
 
     @Transactional
     public ProductCountry createOrUpdateProductCountry(UUID productStableId, MarketContextDto market, CreateProductCountryForm form) {
-        Product product = getGlobalProduct(productStableId);
+        authorizationGuard.requireMarketProductAdmin(market);
+        Product product = getGlobalProduct(productStableId, market);
 
         long countryId = market.getCountry().getId();
         Country country = countryRepository.findById(countryId)

@@ -23,10 +23,12 @@ import java.time.Instant;
 public class StaffAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final MarketResolver marketResolver;
+    private final AuthorizationService authorizationService;
     private final RedirectStrategy redirectStrategy = new DefaultRedirectStrategy();
 
-    public StaffAuthenticationSuccessHandler(MarketResolver marketResolver) {
+    public StaffAuthenticationSuccessHandler(MarketResolver marketResolver, AuthorizationService authorizationService) {
         this.marketResolver = marketResolver;
+        this.authorizationService = authorizationService;
     }
 
     @Override
@@ -50,10 +52,8 @@ public class StaffAuthenticationSuccessHandler implements AuthenticationSuccessH
 
         User user = cud.getUser();
 
-        boolean allowed = user.getUserRoles().stream()
-                .filter(this::isActiveNow)
-                .map(UserRole::getRole)
-                .anyMatch(role -> isAllowedOnMarket(role, marketCountryCode));
+        boolean allowed = authorizationService.canActInCountry(
+                user, market.getCountry().getId());
 
         if (!allowed) {
             request.getSession().invalidate();
@@ -65,32 +65,4 @@ public class StaffAuthenticationSuccessHandler implements AuthenticationSuccessH
 
     }
 
-    private boolean isAllowedOnMarket(Role role, String marketCountryCode) {
-        if (role == null || role.getKey() == null || role.getScope() == null) return false;
-
-
-        if (role.getKey() == RoleKey.HEAD_ADMIN && role.getScope() == RoleScope.GLOBAL) {
-            return true;
-        }
-
-        if (role.getScope() == RoleScope.COUNTRY) {
-            if (role.getKey() == RoleKey.USER) return false;
-            if (role.getCountry() == null) return false;
-
-            String roleCountryCode = role.getCountry().getCode().getValue();
-            return marketCountryCode.equalsIgnoreCase(roleCountryCode);
-        }
-
-
-        return false;
-    }
-
-    private boolean isActiveNow(UserRole ur) {
-        if (ur == null) return false;
-        if (ur.getStatus() != UserRoleStatus.ACTIVE) return false;
-
-        Instant now = Instant.now();
-        if (ur.getValidFrom() != null && now.isBefore(ur.getValidFrom())) return false;
-        return ur.getValidTo() == null || !now.isAfter(ur.getValidTo());
-    }
 }
