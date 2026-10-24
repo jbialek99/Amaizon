@@ -46,7 +46,7 @@ public class StaffAuthenticationSuccessHandler implements AuthenticationSuccessH
         Object principal = authentication.getPrincipal();
         if (!(principal instanceof CustomUserDetails cud)) {
             request.getSession().invalidate();
-            redirectStrategy.sendRedirect(request, response, "/staff/login?error=1");
+            redirectStrategy.sendRedirect(request, response, "/home/staff?error=1");
             return;
         }
 
@@ -57,7 +57,7 @@ public class StaffAuthenticationSuccessHandler implements AuthenticationSuccessH
 
         if (!allowed) {
             request.getSession().invalidate();
-            redirectStrategy.sendRedirect(request, response, "/staff/login?error=1");
+            redirectStrategy.sendRedirect(request, response, "/home/staff?error=1");
             return;
         }
 
