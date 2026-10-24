@@ -134,6 +134,10 @@ public class CheckoutController {
         );
 
         if (user == null) {
+            req.getSession(true).setAttribute(
+                    "AMAIZON_GUEST_ORDER_" + order.getStableId(),
+                    Boolean.TRUE
+            );
             GuestTokenCookie.clear(res);
         }
 
