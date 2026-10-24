@@ -1,0 +1,65 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security"
+      th:lang="${currentLocale != null ? currentLocale.language : 'en'}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{auth.login.title}">Login</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+
+    <div th:replace="~{fragments/navbar :: navbar}"></div>
+
+    <div style="display:flex; justify-content:center; margin-top:14px;">
+        <div class="card" style="width:min(520px, 100%);">
+            <h1 class="h1" th:text="#{auth.login.title}">Login</h1>
+            <div class="muted" th:text="#{auth.login.subtitle}">Sign in</div>
+
+            <div class="hr"></div>
+
+            <div class="alert danger" th:if="${param.error}" style="margin-bottom:12px;">
+                <strong th:text="#{auth.login.error}">Invalid credentials</strong>
+            </div>
+
+            <div class="alert" th:if="${param.logout}" style="margin-bottom:12px;">
+                <strong th:text="#{auth.login.logout}">Logged out</strong>
+            </div>
+
+            <div class="alert" th:if="${param.registered}" style="margin-bottom:12px;">
+                <strong th:text="#{auth.login.registered}">Registered</strong>
+            </div>
+
+            <form th:action="@{/login}" method="post" class="form">
+                <input type="hidden" th:if="${_csrf != null}"
+                       th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                <div class="field" style="margin-top:0;">
+                    <label class="label" th:text="#{auth.email}">Email</label>
+                    <input class="input" type="text" name="email" autocomplete="username" required>
+                </div>
+
+                <div class="field">
+                    <label class="label" th:text="#{auth.password}">Password</label>
+                    <input class="input" type="password" name="password" autocomplete="current-password" required>
+                </div>
+
+                <button type="submit" class="btn primary w-100" th:text="#{auth.signin}" style="margin-top:12px;">
+                    Sign in
+                </button>
+
+                <div class="hr" style="margin:14px 0;"></div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <span class="muted" th:text="#{auth.login.noAccount}">No account?</span>
+                    <a class="btn" th:href="@{/register}" th:text="#{auth.login.goRegister}">Create</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

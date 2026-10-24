@@ -1,0 +1,156 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:lang="${currentLocale.language}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+    <title th:if="${product != null}"
+           th:text="${product.name()}"></title>
+
+    <title th:if="${product == null}"
+           th:text="#{product.notFound.title}"></title>
+
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+
+<body class="page">
+<div class="container">
+
+    <div th:replace="fragments/navbar :: navbar"></div>
+
+    <div class="card product-page"
+         th:if="${product != null}"
+         style="margin-top:14px;">
+
+        <div class="product-page-grid">
+
+            <div class="product-page-media">
+                <img class="product-page-img"
+                     loading="lazy"
+                     th:src="${product.imageUrl() != null && !#strings.isEmpty(product.imageUrl()) ? product.imageUrl() : '/images/placeholder.png'}"
+                     th:alt="#{product.imageAlt}"/>
+            </div>
+
+            <div class="product-page-content">
+
+                <div>
+                    <h1 class="h1" th:text="${product.name()}"></h1>
+
+                    <div class="product-page-meta">
+
+                        <span th:text="${product.brand()}"></span>
+
+                        <span th:if="${product.globalCode() != null && !#strings.isEmpty(product.globalCode())}">
+                            • <span th:text="${product.globalCode()}"></span>
+                        </span>
+
+                    </div>
+                </div>
+
+                <div class="hr"></div>
+
+                <div class="product-page-price">
+                    <span th:text="${#numbers.formatDecimal(product.price(),1,'COMMA',2,'POINT')}"></span>
+                    <span class="muted" th:text="${currencySymbol}"></span>
+                </div>
+
+                <div class="muted small"
+                     th:if="${product.stock() != null && product.stock() > 0}">
+
+                    <span th:text="#{product.inStock}"></span>:
+                    <strong th:text="${product.stock()}"></strong>
+
+                </div>
+
+                <div class="muted small"
+                     th:if="${product.stock() == null || product.stock() == 0}"
+                     th:text="#{product.outOfStock}">
+                </div>
+
+                <div class="hr"></div>
+
+                <form th:action="@{/cart/add}"
+                      method="post"
+                      class="form product-page-form">
+
+                    <input type="hidden"
+                           name="productCountryStableId"
+                           th:value="${product.productCountryStableId()}"/>
+
+
+                    <input type="hidden"
+                           th:name="${_csrf.parameterName}"
+                           th:value="${_csrf.token}"/>
+
+                    <div class="field">
+
+                        <label class="label"
+                               th:text="#{product.quantity}">
+                        </label>
+
+                        <div class="product-page-qty">
+
+                            <input class="input"
+                                   type="number"
+                                   name="qty"
+                                   min="1"
+                                   th:attr="max=${product.stock()}"
+                                   value="1"
+                                   step="1"
+                                   inputmode="numeric"
+                                   th:disabled="${product.stock() == null || product.stock() == 0}"/>
+
+                        </div>
+
+                    </div>
+
+                    <div style="margin-top:14px;"></div>
+
+                    <button class="btn primary w-100"
+                            type="submit"
+                            th:disabled="${product.stock() == null || product.stock() == 0}"
+                            th:text="${product.stock() == null || product.stock() == 0}
+                                ? #{product.outOfStock}
+                                : #{product.addToCart}">
+                    </button>
+
+                    <a class="btn w-100"
+                       style="margin-top:10px; justify-content:center;"
+                       th:href="@{/}"
+                       th:text="#{nav.backHome}">
+                    </a>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="card empty"
+         th:if="${product == null}"
+         style="margin-top:14px;">
+
+        <div style="font-weight:900;"
+             th:text="#{product.notFound.title}">
+        </div>
+
+        <div class="muted"
+             style="margin-top:6px;"
+             th:text="#{product.notFound}">
+        </div>
+
+        <div style="margin-top:12px;">
+            <a class="btn primary"
+               th:href="@{/}"
+               th:text="#{nav.backHome}">
+            </a>
+        </div>
+
+    </div>
+
+</div>
+</body>
+</html>

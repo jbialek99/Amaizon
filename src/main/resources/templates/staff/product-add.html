@@ -1,0 +1,78 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{staff.productAdd.title}">Add product</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+
+    <div class="card" style="margin-top:14px; width:min(720px, 100%);">
+
+        <h1 class="h1" th:text="#{staff.productAdd.heading}">Dodaj produkt globalny</h1>
+        <div class="muted" th:text="#{staff.productAdd.subtitle}">Utwórz nowy produkt globalny</div>
+
+        <div class="hr"></div>
+
+        <form th:action="@{/staff/products/add}" method="post" class="form" th:object="${form}">
+
+            <input type="hidden" th:if="${_csrf != null}"
+                   th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+
+            <div class="alert danger" th:if="${#fields.hasGlobalErrors()}">
+                <div th:each="err : ${#fields.globalErrors()}" th:text="${err}"></div>
+            </div>
+
+            <div class="field" style="margin-top:0;">
+                <label class="label" th:text="#{staff.productAdd.brand}">Marka</label>
+                <input class="input" type="text" th:field="*{brand}" required/>
+                <div class="error-message" th:if="${#fields.hasErrors('brand')}" th:errors="*{brand}"></div>
+            </div>
+
+            <div class="field">
+                <label class="label" th:text="#{staff.productAdd.globalCode}">Global code</label>
+                <input class="input" type="text" th:field="*{globalCode}" required/>
+                <div class="error-message" th:if="${#fields.hasErrors('globalCode')}" th:errors="*{globalCode}"></div>
+            </div>
+
+            <div class="field">
+                <label class="label" th:text="#{staff.productAdd.imageUrl}">URL obrazka</label>
+                <input class="input" type="text" th:field="*{imageUrl}" required/>
+                <div class="error-message" th:if="${#fields.hasErrors('imageUrl')}" th:errors="*{imageUrl}"></div>
+            </div>
+
+            <div class="field">
+                <label class="label" th:text="#{staff.productAdd.category}">Kategoria</label>
+
+                <select class="input" th:field="*{categoryStableId}" required>
+                    <option value="">--</option>
+                    <option th:each="c : ${categories}"
+                            th:value="${c.stableId}"
+                            th:text="${c.name.value}">
+                        Category
+                    </option>
+                </select>
+
+                <div class="error-message" th:if="${#fields.hasErrors('categoryStableId')}" th:errors="*{categoryStableId}"></div>
+            </div>
+
+            <button class="btn primary w-100" type="submit" th:text="#{staff.productAdd.submit}" style="margin-top:12px;">
+                Utwórz produkt
+            </button>
+
+            <div class="hr" style="margin:14px 0;"></div>
+
+            <div style="display:flex; justify-content:flex-end;">
+                <a class="btn" th:href="@{/staff/products}" th:text="#{staff.common.back}">
+                    Powrót
+                </a>
+            </div>
+        </form>
+    </div>
+
+</div>
+</body>
+</html>

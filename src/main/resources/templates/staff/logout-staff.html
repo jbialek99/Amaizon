@@ -1,0 +1,41 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:lang="${market != null ? market.locale.language : 'en'}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{staff.logout.title}">Logout</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+
+    <div class="card" style="margin-top:14px;">
+
+        <div class="alert" style="margin-bottom:12px;">
+            <strong th:text="#{staff.logout.success}">
+                Wylogowano pomyślnie.
+            </strong>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="grid">
+            <a class="btn primary"
+               th:href="@{/home/staff}"
+               th:text="#{staff.logout.backToLogin}">
+                Powrót do logowania
+            </a>
+
+            <a class="btn"
+               th:href="@{/}"
+               th:text="#{staff.logout.backToShop}">
+                Wróć do sklepu
+            </a>
+        </div>
+
+    </div>
+
+</div>
+</body>
+</html>

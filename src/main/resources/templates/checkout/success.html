@@ -1,0 +1,39 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security"
+      th:lang="${currentLocale != null ? currentLocale.language : 'en'}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{checkout.success.title}">Thank you</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+
+    <div th:replace="fragments/navbar :: navbar"></div>
+
+    <div class="card" style="margin-top:14px;">
+        <h1 class="h1" th:text="#{checkout.success.title}">Dziękujemy za zakupy!</h1>
+        <div class="muted" th:text="#{checkout.success.subtitle}">Zamówienie zostało złożone.</div>
+
+        <div class="hr"></div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a class="btn primary"
+               th:href="@{/orders/{id}(id=${orderStableId})}"
+               th:text="#{checkout.success.viewOrder}">
+                Zobacz zamówienie
+            </a>
+
+            <a class="btn"
+               th:href="@{/}"
+               th:text="#{checkout.success.backHome}">
+                Wróć na stronę główną
+            </a>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:lang="${currentLocale != null ? currentLocale.language : 'en'}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{error.title}">Error</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+
+    <div th:replace="fragments/navbar :: navbar"></div>
+
+    <div class="card" style="margin-top:14px;">
+        <h1 class="h1" th:text="#{error.genericTitle}">Coś poszło nie tak</h1>
+        <div class="muted" th:text="#{error.genericSubtitle}">Spróbuj ponownie za chwilę.</div>
+
+        <div class="hr"></div>
+
+        <div class="alert danger" th:if="${message}" th:text="${message}">
+            Unexpected error
+        </div>
+
+        <div class="small muted" style="margin-top:10px;">
+            <div th:if="${status}">Status: <span th:text="${status}">500</span></div>
+            <div th:if="${error}">Error: <span th:text="${error}">Internal Server Error</span></div>
+            <div th:if="${path}">Path: <span th:text="${path}">/</span></div>
+        </div>
+
+        <div class="hr"></div>
+
+        <a class="btn primary" th:href="@{/}" th:text="#{nav.backHome}">Wróć na stronę główną</a>
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{staff.productCountrySelect.title}">Select product</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+
+    <div class="card" style="margin-top:14px; width:min(900px, 100%);">
+        <h1 class="h1" th:text="#{staff.productCountrySelect.heading}">Wybierz produkt</h1>
+        <div class="muted" th:text="#{staff.productCountrySelect.subtitle}">Wybierz globalny produkt do przypisania dla rynku</div>
+
+        <div class="hr"></div>
+
+        <div th:if="${products == null || #lists.isEmpty(products)}" class="muted"
+             th:text="#{staff.productCountrySelect.empty}">
+            Brak produktów.
+        </div>
+
+        <div th:if="${products != null && !#lists.isEmpty(products)}"
+             style="display:flex; flex-direction:column; gap:10px;">
+
+            <div class="card"
+                 th:each="p : ${products}"
+                 style="padding:12px;"
+                 th:with="assigned=${alreadyAssigned != null and alreadyAssigned.contains(p.stableId)}">
+
+                <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;">
+
+                    <div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <strong th:text="${p.brand.value}">Brand</strong>
+
+
+                            <span class="badge"
+                                  th:if="${assigned}"
+                                  th:text="#{staff.productCountrySelect.alreadyAssigned}">
+                                JUŻ DODANY
+                            </span>
+                        </div>
+
+                        <div class="muted">
+                            <span th:text="${p.sku.value}">CODE</span>
+                        </div>
+                    </div>
+
+                    <a class="btn primary"
+                       th:if="${!assigned}"
+                       th:href="@{/staff/products/add-country/{id}(id=${p.stableId})}"
+                       th:text="#{staff.productCountrySelect.choose}">
+                        Wybierz
+                    </a>
+
+
+                    <button class="btn" type="button" disabled
+                            th:if="${assigned}"
+                            th:text="#{staff.productCountrySelect.added}">
+                        Dodany
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="hr"></div>
+        <div style="display:flex; justify-content:flex-end;">
+            <a class="btn" th:href="@{/staff/products}" th:text="#{staff.common.back}">Powrót</a>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

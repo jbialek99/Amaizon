@@ -1,0 +1,62 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{staff.products.title}">Staff Products</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+    <div class="card" style="margin-top:14px; width:min(820px, 100%);">
+
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+            <a class="btn" th:href="@{/home-staff}" th:text="#{staff.common.back}">Powrót</a>
+
+            <form th:action="@{/staff/logout}" method="post" style="margin:0;">
+                <input type="hidden" th:if="${_csrf != null}"
+                       th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button class="btn danger" type="submit" th:text="#{staff.home.logout}">
+                    Wyloguj
+                </button>
+            </form>
+        </div>
+
+        <div class="hr"></div>
+
+        <h1 class="h1" th:text="#{staff.products.heading}">Produkty</h1>
+        <div class="muted" th:text="#{staff.products.subtitle}">Zarządzanie produktami</div>
+
+        <div class="hr"></div>
+
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+
+
+            <a class="btn"
+               th:if="${isHeadAdmin}"
+               th:href="@{/staff/products/add}"
+               th:text="#{staff.products.goAddGlobal}">
+                Dodaj globalny
+            </a>
+
+            <a class="btn primary"
+               th:if="${isHeadAdmin or isCountryAdmin}"
+               th:href="@{/staff/products/add-country}"
+               th:text="#{staff.products.goAddCountry}">
+                Dodaj krajowy
+            </a>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="muted" th:if="${param.createdProduct}" th:text="#{staff.products.createdProduct}">
+            Utworzono produkt.
+        </div>
+        <div class="muted" th:if="${param.createdProductCountry}" th:text="#{staff.products.createdProductCountry}">
+            Utworzono produkt krajowy.
+        </div>
+    </div>
+</div>
+</body>
+</html>

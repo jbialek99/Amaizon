@@ -1,0 +1,104 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:lang="${currentLocale.language}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{nav.home}"></title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+
+    <div th:replace="fragments/navbar :: navbar"></div>
+
+    <div class="card" style="margin-top:14px;">
+
+        <div class="alert"
+             th:if="${param.login != null}"
+             style="margin-bottom:12px;">
+            <strong th:text="#{flash.login.ok}"></strong>
+        </div>
+
+        <div class="alert"
+             th:if="${param.logout != null}"
+             style="margin-bottom:12px;">
+            <strong th:text="#{flash.logout.ok}"></strong>
+        </div>
+
+        <div class="hr"
+             th:if="${param.login != null || param.logout != null}">
+        </div>
+
+        <h1 class="h1" th:text="#{home.title}"></h1>
+
+        <div class="muted"
+             th:text="#{home.subtitle}">
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="empty"
+             th:if="${noProducts}"
+             th:text="#{home.noProducts}">
+        </div>
+
+        <div class="grid"
+             th:if="${!noProducts}">
+
+            <div class="product"
+                 th:each="product : ${products}">
+
+                <img class="product-img"
+                     loading="lazy"
+                     th:src="${product.imageUrl() != null && !#strings.isEmpty(product.imageUrl())
+                                ? product.imageUrl()
+                                : '/images/placeholder.png'}"
+                     th:alt="#{product.imageAlt}"/>
+
+                <div class="product-body">
+
+                    <div class="product-name"
+                         th:text="${product.name()}">
+                    </div>
+
+                    <div class="product-meta">
+
+                        <span th:text="${product.brand()}"></span>
+
+                        <span th:if="${product.globalCode() != null && !#strings.isEmpty(product.globalCode())}">
+                            • <span th:text="${product.globalCode()}"></span>
+                        </span>
+
+                    </div>
+
+                    <div class="price-row">
+
+                        <div class="price">
+                            <span th:text="${#numbers.formatDecimal(product.price(), 1, 'COMMA', 2, 'POINT')}"></span>
+                            <span th:text="${currencySymbol}"></span>
+                        </div>
+
+                        <a class="btn primary"
+                           th:href="@{/p/{id}(id=${product.productCountryStableId()})}"
+                           th:text="#{product.view}">
+                        </a>
+
+                    </div>
+
+                    <div class="muted small"
+                         th:if="${product.stock() == null || product.stock() == 0}"
+                         th:text="#{product.outOfStock}">
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+</body>
+</html>

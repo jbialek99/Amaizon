@@ -1,0 +1,57 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml"
+      th:lang="${market != null ? market.locale.language : 'en'}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{staff.products.title}">Products</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+
+    <div class="card" style="margin-top:14px;">
+
+        <div class="alert" th:if="${param.createdProduct != null}" style="margin-bottom:12px;">
+            <strong th:text="#{staff.products.flash.createdProduct}">Dodano produkt ✅</strong>
+        </div>
+
+        <div class="alert" th:if="${param.createdProductCountry != null}" style="margin-bottom:12px;">
+            <strong th:text="#{staff.products.flash.createdProductCountry}">Dodano produkt krajowy ✅</strong>
+        </div>
+
+        <div class="hr" th:if="${param.createdProduct != null || param.createdProductCountry != null}"></div>
+
+        <h1 class="h1" th:text="#{staff.products.heading}">Zarządzaj produktami</h1>
+        <div class="muted" th:text="#{staff.products.subtitle}">Wybierz akcję</div>
+
+        <div class="hr"></div>
+
+        <div class="grid">
+
+
+            <a class="btn primary"
+               sec:authorize="hasRole('HEAD_ADMIN')"
+               th:href="@{/staff/products/add}"
+               th:text="#{staff.products.addGlobal}">
+                Dodaj produkt
+            </a>
+
+
+            <a class="btn primary"
+               sec:authorize="hasAnyRole('ADMIN','HEAD_ADMIN')"
+               th:href="@{/staff/products/add-country}"
+               th:text="#{staff.products.addCountry}">
+                Dodaj produkt krajowy
+            </a>
+
+            <a class="btn" th:href="@{/home-staff}" th:text="#{staff.common.back}">
+                Powrót
+            </a>
+        </div>
+
+    </div>
+
+</div>
+</body>
+</html>

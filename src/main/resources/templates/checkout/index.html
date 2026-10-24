@@ -1,0 +1,355 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security"
+      th:lang="${currentLocale != null ? currentLocale.language : 'en'}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{checkout.title}">Checkout</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+
+    <div th:replace="fragments/navbar :: navbar"></div>
+
+    <div class="card" style="margin-top:14px;">
+        <h1 class="h1" th:text="#{checkout.title}">Checkout</h1>
+        <div class="muted" th:text="#{checkout.subtitle}">Confirm your items and enter address details.</div>
+
+        <div class="hr"></div>
+
+        <div th:if="${cart != null && #lists.size(cart.items) > 0}" class="checkout-layout">
+
+
+            <form th:action="@{/checkout/recalc}" method="post" th:object="${checkout}" class="form">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                <input type="hidden" th:field="*{shippingCountryCode}"/>
+                <input type="hidden" th:field="*{shippingCountryName}"/>
+                <input type="hidden" th:field="*{billingCountryCode}"/>
+                <input type="hidden" th:field="*{billingCountryName}"/>
+
+                <div class="card" style="padding:16px; margin-bottom:16px;">
+                    <div style="font-weight:900; margin-bottom:10px;" th:text="#{checkout.contact.title}">Contact</div>
+
+                    <div class="field">
+                        <label class="label" th:text="#{checkout.email}">Email</label>
+                        <input class="input" type="email" th:field="*{contactEmail}" autocomplete="email" required/>
+                        <ul class="field-errors" th:if="${#fields.hasErrors('contactEmail')}">
+                            <li th:each="e : ${#fields.errors('contactEmail')}" th:text="${e}"></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+
+                    <div class="card" style="padding:16px;">
+                        <div style="font-weight:900; margin-bottom:10px;" th:text="#{checkout.shipping.title}">Shipping address</div>
+
+                        <div class="field">
+                            <label class="label" th:text="#{checkout.recipientName}">Recipient name</label>
+                            <input class="input" th:field="*{shippingRecipientName}" required/>
+                            <ul class="field-errors" th:if="${#fields.hasErrors('shippingRecipientName')}">
+                                <li th:each="e : ${#fields.errors('shippingRecipientName')}" th:text="${e}"></li>
+                            </ul>
+                        </div>
+
+                        <div class="field">
+                            <label class="label" th:text="#{checkout.phone}">Phone</label>
+                            <input class="input" th:field="*{shippingPhone}" required/>
+                            <ul class="field-errors" th:if="${#fields.hasErrors('shippingPhone')}">
+                                <li th:each="e : ${#fields.errors('shippingPhone')}" th:text="${e}"></li>
+                            </ul>
+                        </div>
+
+                        <div class="field" th:if="${showState}">
+                            <label class="label" th:text="#{checkout.state}">State</label>
+                            <select class="input" th:field="*{shippingState}">
+                                <option value="">--</option>
+                                <option th:each="s : ${T(org.example.amaizon.model.enums.UsState).values()}"
+                                        th:value="${s}" th:text="${s}"></option>
+                            </select>
+                            <ul class="field-errors" th:if="${#fields.hasErrors('shippingState')}">
+                                <li th:each="e : ${#fields.errors('shippingState')}" th:text="${e}"></li>
+                            </ul>
+                        </div>
+
+                        <div class="field">
+                            <label class="label" th:text="#{checkout.city}">City</label>
+                            <input class="input" th:field="*{shippingCity}" required/>
+                            <ul class="field-errors" th:if="${#fields.hasErrors('shippingCity')}">
+                                <li th:each="e : ${#fields.errors('shippingCity')}" th:text="${e}"></li>
+                            </ul>
+                        </div>
+
+                        <div class="field" th:if="${showPostal}">
+                            <label class="label" th:text="#{${postalLabelKey}}">Postal code</label>
+                            <input class="input" th:field="*{shippingPostalCode}" required/>
+                            <ul class="field-errors" th:if="${#fields.hasErrors('shippingPostalCode')}">
+                                <li th:each="e : ${#fields.errors('shippingPostalCode')}" th:text="${e}"></li>
+                            </ul>
+                        </div>
+
+                        <div class="field">
+                            <label class="label" th:text="#{checkout.street}">Street</label>
+                            <input class="input" th:field="*{shippingStreetLine1}" required/>
+                            <ul class="field-errors" th:if="${#fields.hasErrors('shippingStreetLine1')}">
+                                <li th:each="e : ${#fields.errors('shippingStreetLine1')}" th:text="${e}"></li>
+                            </ul>
+                        </div>
+
+                        <div class="field">
+                            <label class="label" th:text="#{checkout.streetLine2}">Street line 2</label>
+                            <input class="input" th:field="*{shippingStreetLine2}"/>
+                            <ul class="field-errors" th:if="${#fields.hasErrors('shippingStreetLine2')}">
+                                <li th:each="e : ${#fields.errors('shippingStreetLine2')}" th:text="${e}"></li>
+                            </ul>
+                        </div>
+                    </div>
+
+
+                    <div class="card" style="padding:16px;">
+                        <div style="font-weight:900; margin-bottom:10px;" th:text="#{checkout.billing.title}">Billing address</div>
+
+                        <div class="field">
+                            <label class="label" th:text="#{checkout.customerType}">Customer type</label>
+                            <select class="input" id="billingCustomerType" th:field="*{billingCustomerType}">
+                                <option th:value="INDIVIDUAL" th:text="#{checkout.customerType.individual}">Individual</option>
+                                <option th:value="COMPANY" th:text="#{checkout.customerType.company}">Company</option>
+                            </select>
+                            <ul class="field-errors" th:if="${#fields.hasErrors('billingCustomerType')}">
+                                <li th:each="e : ${#fields.errors('billingCustomerType')}" th:text="${e}"></li>
+                            </ul>
+                        </div>
+
+                        <div id="companyFields" style="display:none;">
+                            <div class="field">
+                                <label class="label" th:text="#{checkout.companyName}">Company name</label>
+                                <input class="input" th:field="*{billingCompanyName}"/>
+                                <ul class="field-errors" th:if="${#fields.hasErrors('billingCompanyName')}">
+                                    <li th:each="e : ${#fields.errors('billingCompanyName')}" th:text="${e}"></li>
+                                </ul>
+                            </div>
+
+                            <div class="field">
+                                <label class="label" th:text="#{checkout.taxId}">Tax ID</label>
+                                <input class="input" th:field="*{billingTaxId}"/>
+                                <ul class="field-errors" th:if="${#fields.hasErrors('billingTaxId')}">
+                                    <li th:each="e : ${#fields.errors('billingTaxId')}" th:text="${e}"></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label class="label" th:text="#{checkout.recipientName}">Recipient name</label>
+                            <input class="input" th:field="*{billingRecipientName}" required/>
+                            <ul class="field-errors" th:if="${#fields.hasErrors('billingRecipientName')}">
+                                <li th:each="e : ${#fields.errors('billingRecipientName')}" th:text="${e}"></li>
+                            </ul>
+                        </div>
+
+                        <div class="field">
+                            <label class="label" th:text="#{checkout.phone}">Phone</label>
+                            <input class="input" th:field="*{billingPhone}" required/>
+                            <ul class="field-errors" th:if="${#fields.hasErrors('billingPhone')}">
+                                <li th:each="e : ${#fields.errors('billingPhone')}" th:text="${e}"></li>
+                            </ul>
+                        </div>
+
+                        <div class="field" th:if="${showState}">
+                            <label class="label" th:text="#{checkout.state}">State</label>
+                            <select class="input" th:field="*{billingState}">
+                                <option value="">--</option>
+                                <option th:each="s : ${T(org.example.amaizon.model.enums.UsState).values()}"
+                                        th:value="${s}" th:text="${s}"></option>
+                            </select>
+                            <ul class="field-errors" th:if="${#fields.hasErrors('billingState')}">
+                                <li th:each="e : ${#fields.errors('billingState')}" th:text="${e}"></li>
+                            </ul>
+                        </div>
+
+                        <div class="field">
+                            <label class="label" th:text="#{checkout.city}">City</label>
+                            <input class="input" th:field="*{billingCity}" required/>
+                            <ul class="field-errors" th:if="${#fields.hasErrors('billingCity')}">
+                                <li th:each="e : ${#fields.errors('billingCity')}" th:text="${e}"></li>
+                            </ul>
+                        </div>
+
+                        <div class="field" th:if="${showPostal}">
+                            <label class="label" th:text="#{${postalLabelKey}}">Postal code</label>
+                            <input class="input" th:field="*{billingPostalCode}" required/>
+                            <ul class="field-errors" th:if="${#fields.hasErrors('billingPostalCode')}">
+                                <li th:each="e : ${#fields.errors('billingPostalCode')}" th:text="${e}"></li>
+                            </ul>
+                        </div>
+
+                        <div class="field">
+                            <label class="label" th:text="#{checkout.street}">Street</label>
+                            <input class="input" th:field="*{billingStreetLine1}" required/>
+                            <ul class="field-errors" th:if="${#fields.hasErrors('billingStreetLine1')}">
+                                <li th:each="e : ${#fields.errors('billingStreetLine1')}" th:text="${e}"></li>
+                            </ul>
+                        </div>
+
+                        <div class="field">
+                            <label class="label" th:text="#{checkout.streetLine2}">Street line 2</label>
+                            <input class="input" th:field="*{billingStreetLine2}"/>
+                            <ul class="field-errors" th:if="${#fields.hasErrors('billingStreetLine2')}">
+                                <li th:each="e : ${#fields.errors('billingStreetLine2')}" th:text="${e}"></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="card" style="padding:16px; margin-top:16px;">
+                    <div style="font-weight:900; margin-bottom:10px;" th:text="#{checkout.delivery.title}">Choose delivery</div>
+
+                    <div class="field">
+                        <label class="label" th:text="#{checkout.delivery.carrier}">Carrier</label>
+                        <select class="input" id="shippingCarrierSelect" th:field="*{shippingCarrier}" required>
+                            <option value="" th:text="#{checkout.delivery.choose}">-- choose --</option>
+                            <option th:each="c : ${T(org.example.amaizon.model.enums.Carrier).values()}"
+                                    th:value="${c}"
+                                    th:text="${#messages.msg('carrier.' + c.name())}">
+                                DHL
+                            </option>
+                        </select>
+
+                        <ul class="field-errors" th:if="${#fields.hasErrors('shippingCarrier')}">
+                            <li th:each="e : ${#fields.errors('shippingCarrier')}" th:text="${e}"></li>
+                        </ul>
+                    </div>
+
+                    <div class="muted small" th:if="${shippingCostByCarrier != null && checkout.shippingCarrier != null}">
+                        <span th:text="#{checkout.delivery.cost}">Shipping cost</span>:
+                        <span th:text="${shippingCostByCarrier[checkout.shippingCarrier]}">0.00</span>
+                        <span th:text="${currencySymbol}">zł</span>
+                    </div>
+                </div>
+
+                <button class="btn primary w-100" type="submit"
+                        style="margin-top:16px;"
+                        formaction="/checkout"
+                        formmethod="post"
+                        th:text="#{checkout.placeOrder}">
+                    Place order
+                </button>
+            </form>
+
+
+            <aside class="card sticky" style="padding:16px;">
+                <div style="font-weight:900; margin-bottom:10px;" th:text="#{checkout.summary.title}">Order summary</div>
+
+                <div class="muted" style="margin-bottom:10px;">
+                    <span th:text="#{checkout.summary.items}">Items</span>:
+                    <span th:text="${summaryQty}">0</span>
+                </div>
+
+                <div th:each="it : ${cart.items}"
+                     th:with="
+                        unit=${(it.productCountry != null and it.productCountry.price != null and it.productCountry.price.priceValue != null)
+                                ? it.productCountry.price.priceValue : 0}
+                     "
+                     style="display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,.10);">
+
+                    <div style="min-width:0;">
+                        <div style="font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
+                             th:text="${(it.productCountry != null and it.productCountry.translation != null and it.productCountry.translation.displayName != null)
+                                    ? it.productCountry.translation.displayName.value
+                                    : 'Product'}">
+                            Product
+                        </div>
+
+                        <div class="muted small">
+                            <span th:text="#{checkout.qty}">Qty</span>:
+                            <span th:text="${it.quantity}">1</span>
+                            <span class="muted"> · </span>
+                            <span th:text="#{checkout.price}">Price</span>:
+                            <span th:text="${#numbers.formatDecimal(unit, 1, 2)}">0.00</span>
+                            <span th:text="${currencySymbol}">zł</span>
+                        </div>
+                    </div>
+
+                    <div class="muted small" style="white-space:nowrap;">
+                        <span th:text="${it.quantity}">1</span><span class="muted">×</span>
+                        <span th:text="${#numbers.formatDecimal(unit, 1, 2)}">0.00</span>
+                        <span th:text="${currencySymbol}">zł</span>
+                    </div>
+                </div>
+
+                <div style="height:12px;"></div>
+
+                <div style="display:flex; justify-content:space-between; margin-top:6px;">
+                    <div class="muted" th:text="#{checkout.summary.subtotal}">Subtotal</div>
+                    <div style="font-weight:900;"
+                         th:text="${#numbers.formatDecimal(summarySubtotal, 1, 2)} + ' ' + ${currencySymbol}">
+                        0.00
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; margin-top:6px;">
+                    <div class="muted" th:text="#{checkout.summary.shipping}">Shipping</div>
+                    <div style="font-weight:900;"
+                         th:text="${summaryCarrierSelected ? (#numbers.formatDecimal(summaryShipping, 1, 2) + ' ' + currencySymbol) : '—'}">
+                        —
+                    </div>
+                </div>
+
+                <div class="hr" style="margin:12px 0;"></div>
+
+                <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                    <div style="font-weight:900;" th:text="#{checkout.summary.total}">Total</div>
+                    <div style="font-weight:900; font-size:18px;"
+                         th:text="${#numbers.formatDecimal(summaryTotal, 1, 2)} + ' ' + ${currencySymbol}">
+                        0.00
+                    </div>
+                </div>
+
+                <div class="muted small" style="margin-top:10px;" th:text="#{checkout.summary.note}">
+                    Taxes calculated in next steps (if applicable).
+                </div>
+            </aside>
+        </div>
+
+        <div th:if="${cart == null || #lists.size(cart.items) == 0}" class="empty">
+            Cart is empty.
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const type = document.getElementById("billingCustomerType");
+        const company = document.getElementById("companyFields");
+
+        function toggleCompany() {
+            if (!type || !company) return;
+
+            const isCompany = type.value === "COMPANY";
+            company.style.display = isCompany ? "block" : "none";
+
+            company.querySelectorAll("input, select, textarea").forEach(el => {
+                el.disabled = !isCompany;
+            });
+        }
+
+        toggleCompany();
+        if (type) type.addEventListener("change", toggleCompany);
+
+        const carrierSelect = document.getElementById("shippingCarrierSelect");
+        if (carrierSelect) {
+            carrierSelect.addEventListener("change", function () {
+                const form = carrierSelect.closest("form");
+                if (form) form.submit();
+            });
+        }
+    });
+</script>
+
+
+
+</body>
+</html>

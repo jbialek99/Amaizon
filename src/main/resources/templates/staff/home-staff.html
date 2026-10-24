@@ -1,0 +1,60 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:lang="${market != null ? market.locale.language : 'en'}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{staff.home.title}">Staff</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+
+    <div class="card" style="margin-top:14px;">
+
+        <div class="alert"
+             th:if="${param.login != null}"
+             style="margin-bottom:12px;">
+            <strong th:text="#{flash.login.ok}">Zalogowano pomyślnie.</strong>
+        </div>
+
+        <div class="hr" th:if="${param.login != null}"></div>
+
+        <h1 class="h1" th:text="#{staff.home.heading}">Panel administracyjny</h1>
+        <div class="muted"
+             th:text="${market != null ? #messages.msg('staff.home.market', market.country.name.value) : #messages.msg('staff.home.market.unknown')}">
+            Rynek
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="grid">
+            <a class="btn primary"
+               th:href="@{/staff/products}"
+               th:text="#{staff.home.products}">
+                Manage products
+            </a>
+
+            <a class="btn"
+               th:href="@{/}"
+               th:text="#{staff.home.backToHome}">
+                Back to home
+            </a>
+
+
+            <form th:action="@{/staff/logout}" method="post" style="margin:0;">
+                <input type="hidden" th:if="${_csrf != null}"
+                       th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button class="btn danger"
+                        type="submit"
+                        th:text="#{staff.home.logout}">
+                    Logout
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+</div>
+</body>
+</html>

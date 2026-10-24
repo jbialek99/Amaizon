@@ -1,0 +1,84 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<div th:fragment="navbar">
+
+    <div class="card navbar">
+        <div class="navbar-inner">
+
+
+            <div class="nav-left">
+                <div class="brand">
+                    <span class="brand-dot"></span>
+                    <a th:href="@{/}" th:text="#{brand.name}">Amaizon</a>
+
+                    <span class="badge" th:if="${market != null}">
+                        <span th:text="#{market.country}">Country</span>:
+                        <strong th:text="${market.country.name}">PL</strong>
+                    </span>
+
+                    <span class="badge" th:if="${market == null}" th:text="#{market.unknown}">
+                        Unknown market
+                    </span>
+
+                    <span class="badge" th:if="${currencySymbol != null && !currencySymbol.isEmpty()}">
+                        <span th:text="#{market.currency}">Currency</span>:
+                        <strong th:text="${currencySymbol}">zł</strong>
+                    </span>
+                </div>
+
+                <div class="nav-links">
+                    <a class="btn" th:href="@{/}" th:text="#{nav.home}">Home</a>
+                    <a class="btn" th:href="@{/about}" th:text="#{nav.about}">About</a>
+
+                    <a class="btn cart-btn" th:href="@{/cart}">
+                        <span th:text="#{nav.cart}">Cart</span>
+                        <span class="cart-badge"
+                              th:if="${cartItemCount != null && cartItemCount > 0}"
+                              th:text="${cartItemCount}">0</span>
+                    </a>
+
+                </div>
+            </div>
+
+
+            <div class="nav-right">
+
+
+                <a class="btn"
+                   sec:authorize="hasAnyRole('COUNTRY_ADMIN','HEAD_ADMIN')"
+                   th:href="@{/home-staff}"
+                   th:text="#{staff.common.adminPanel}">
+                    Admin panel
+                </a>
+
+
+                <a class="btn" sec:authorize="isAnonymous()"
+                   th:href="@{/login}" th:text="#{nav.login}">
+                    Login
+                </a>
+                <a class="btn primary" sec:authorize="isAnonymous()"
+                   th:href="@{/register}" th:text="#{nav.register}">
+                    Register
+                </a>
+
+                <form sec:authorize="isAuthenticated()"
+                      th:action="@{/logout}" method="post" style="margin:0;">
+                    <input type="hidden" th:if="${_csrf != null}"
+                           th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button class="btn danger" type="submit" th:text="#{nav.logout}">
+                        Logout
+                    </button>
+                </form>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

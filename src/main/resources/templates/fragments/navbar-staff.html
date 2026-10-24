@@ -1,0 +1,43 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<div th:fragment="navbarStaff">
+
+    <div class="card navbar">
+        <div class="navbar-inner">
+
+            <div class="nav-left">
+                <div class="brand">
+                    <span class="brand-dot"></span>
+                    <a th:href="@{/home-staff}">Amaizon STAFF</a>
+
+                    <span class="badge" th:if="${market != null}">
+                        <span>Market</span>:
+                        <strong th:text="${market.country.name}">PL</strong>
+                    </span>
+                </div>
+
+                <div class="nav-links">
+                    <a class="btn" th:href="@{/home-staff}">Home</a>
+                    <a class="btn" th:href="@{/staff/products}">Produkty</a>
+                </div>
+            </div>
+
+            <div class="nav-right">
+                <form sec:authorize="isAuthenticated()"
+                      th:action="@{/staff/logout}" method="post" style="margin:0;">
+                    <input type="hidden" th:if="${_csrf != null}"
+                           th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button class="btn danger" type="submit">Logout</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

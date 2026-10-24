@@ -1,0 +1,64 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:lang="${#locale.language}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{error.validation.title}">Validation error</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+
+    <div class="card" style="margin-top:14px; width:min(820px, 100%);">
+
+        <h1 class="h1" th:text="#{error.validation.heading}">Błąd walidacji</h1>
+        <div class="muted" th:text="#{error.validation.subtitle}">
+            Nie udało się wykonać operacji.
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="alert danger"
+             th:if="${#fields != null and (#fields.hasErrors('*') or #fields.hasGlobalErrors())}">
+            <strong th:text="#{error.validation.generic}">Niepoprawne dane.</strong>
+
+            <ul style="margin-top:10px; padding-left:18px;">
+                <li th:each="e : ${#fields.globalErrors()}"
+                    th:text="${e}">
+                    Błąd ogólny
+                </li>
+
+
+                <li th:each="e : ${#fields.errors('*')}"
+                    th:text="${e}">
+                    Błąd pola
+                </li>
+            </ul>
+        </div>
+
+=
+        <div class="alert danger"
+             th:if="${( #fields == null or !(#fields.hasErrors('*') or #fields.hasGlobalErrors()) ) and validationError != null}">
+            <strong th:text="${validationError}">Niepoprawne dane.</strong>
+        </div>
+
+
+        <div class="alert danger"
+             th:if="${( #fields == null or !(#fields.hasErrors('*') or #fields.hasGlobalErrors()) ) and validationError == null}">
+            <strong th:text="#{error.validation.generic}">Niepoprawne dane.</strong>
+        </div>
+
+        <div class="hr"></div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
+            <a class="btn" th:href="@{/staff/products}" th:text="#{error.validation.back}">
+                Powrót
+            </a>
+        </div>
+
+    </div>
+
+</div>
+</body>
+</html>

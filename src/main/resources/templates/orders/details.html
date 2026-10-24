@@ -1,0 +1,203 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security"
+      th:lang="${currentLocale != null ? currentLocale.language : 'en'}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{order.title}">Order</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+
+    <div th:replace="fragments/navbar :: navbar"></div>
+
+    <div class="card" style="margin-top:14px; padding:16px;">
+        <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+            <div>
+                <h1 class="h1" th:text="#{order.title}">Order</h1>
+                <div class="muted">
+                    <span th:text="#{order.id}">Order ID</span>:
+                    <strong th:text="${order.stableId}">...</strong>
+                </div>
+                <div class="muted" th:if="${order.contactEmail != null}">
+                    <span th:text="#{order.email}">Email</span>:
+                    <strong th:text="${order.contactEmail}">email</strong>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <div class="badge">
+                    <span th:text="#{order.status}">Status</span>:
+                    <strong th:text="${order.status}">NEW</strong>
+                </div>
+
+                <a class="btn" th:href="@{/}" th:text="#{order.backHome}">Home</a>
+            </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+            <div class="card" style="padding:12px;">
+                <div style="font-weight:900; margin-bottom:6px;" th:text="#{order.shippingAddress}">Shipping</div>
+
+                <div th:text="${order.shippingAddress.recipientName}">Name</div>
+                <div class="muted" th:text="${order.shippingAddress.phone}">Phone</div>
+
+                <div style="margin-top:6px;">
+                    <div th:text="${order.shippingAddress.streetLine1}">Street</div>
+                    <div class="muted"
+                         th:if="${order.shippingAddress.streetLine2 != null && !#strings.isEmpty(order.shippingAddress.streetLine2)}"
+                         th:text="${order.shippingAddress.streetLine2}">Street2</div>
+                    <div class="muted">
+                        <span th:text="${order.shippingAddress.postalCode}">00-000</span>
+                        <span> </span>
+                        <span th:text="${order.shippingAddress.city}">City</span>
+                    </div>
+                    <div class="muted">
+                        <span th:text="${order.shippingAddress.countryName}">Poland</span>
+                        <span th:if="${order.shippingAddress.state != null}"> · </span>
+                        <span th:if="${order.shippingAddress.state != null}" th:text="${order.shippingAddress.state}">STATE</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="padding:12px;">
+                <div style="font-weight:900; margin-bottom:6px;" th:text="#{order.billingAddress}">Billing</div>
+
+                <div th:text="${order.billingAddress.recipientName}">Name</div>
+                <div class="muted" th:text="${order.billingAddress.phone}">Phone</div>
+
+                <div style="margin-top:6px;">
+                    <div th:text="${order.billingAddress.streetLine1}">Street</div>
+                    <div class="muted"
+                         th:if="${order.billingAddress.streetLine2 != null && !#strings.isEmpty(order.billingAddress.streetLine2)}"
+                         th:text="${order.billingAddress.streetLine2}">Street2</div>
+                    <div class="muted">
+                        <span th:text="${order.billingAddress.postalCode}">00-000</span>
+                        <span> </span>
+                        <span th:text="${order.billingAddress.city}">City</span>
+                    </div>
+                    <div class="muted">
+                        <span th:text="${order.billingAddress.countryName}">Poland</span>
+                        <span th:if="${order.billingAddress.state != null}"> · </span>
+                        <span th:if="${order.billingAddress.state != null}" th:text="${order.billingAddress.state}">STATE</span>
+                    </div>
+                </div>
+
+                <div class="hr" style="margin:10px 0;"></div>
+
+                <div class="muted">
+                    <span th:text="#{order.customerType}">Customer type</span>:
+                    <strong th:text="${order.billingCustomerType}">INDIVIDUAL</strong>
+                </div>
+                <div class="muted" th:if="${order.billingCompanyName != null && !#strings.isEmpty(order.billingCompanyName)}">
+                    <span th:text="#{order.company}">Company</span>:
+                    <strong th:text="${order.billingCompanyName}">Company</strong>
+                </div>
+                <div class="muted" th:if="${order.billingTaxId != null && !#strings.isEmpty(order.billingTaxId)}">
+                    <span th:text="#{order.taxId}">Tax ID</span>:
+                    <strong th:text="${order.billingTaxId}">NIP</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="checkout-layout">
+            <div>
+                <h2 style="margin:0 0 10px 0;" th:text="#{order.items}">Items</h2>
+
+                <div th:if="${order.items == null || #lists.size(order.items) == 0}" class="empty">
+                    <span th:text="#{order.items.empty}">No items.</span>
+                </div>
+
+                <div th:if="${order.items != null && #lists.size(order.items) > 0}">
+                    <div th:each="it : ${order.items}"
+                         style="display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,.10);">
+
+                        <div style="min-width:0;">
+                            <div style="font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
+                                 th:text="${it.productNameSnapshot}">
+                                Product name
+                            </div>
+
+                            <div class="muted small">
+                                <span th:text="#{checkout.qty}">Qty</span>:
+                                <span th:text="${it.quantity}">1</span>
+                                <span class="muted"> · </span>
+                                <span th:text="#{checkout.price}">Price</span>:
+                                <span th:text="${#numbers.formatDecimal(it.unitPrice != null ? it.unitPrice.value : 0, 1, 2)}">0.00</span>
+                                <span th:text="${currencySymbol}">zł</span>
+                            </div>
+                        </div>
+
+                        <div style="font-weight:900; white-space:nowrap;"
+                             th:text="${#numbers.formatDecimal(it.lineTotal, 1, 2)} + ' ' + ${currencySymbol}">
+                            0.00 zł
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="card sticky" style="padding:16px;">
+                <div style="font-weight:900; margin-bottom:10px;" th:text="#{order.summary}">Summary</div>
+
+                <div style="display:flex; justify-content:space-between; margin-top:6px;">
+                    <div class="muted" th:text="#{checkout.summary.subtotal}">Subtotal</div>
+                    <div style="font-weight:900;"
+                         th:text="${#numbers.formatDecimal(order.itemsSubtotal != null ? order.itemsSubtotal.value : 0, 1, 2)} + ' ' + ${currencySymbol}">
+                        0.00 zł
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; margin-top:6px;">
+                    <div class="muted" th:text="#{checkout.summary.shipping}">Shipping</div>
+                    <div style="font-weight:900;"
+                         th:text="${#numbers.formatDecimal(order.shippingCost != null ? order.shippingCost.value : 0, 1, 2)} + ' ' + ${currencySymbol}">
+                        0.00 zł
+                    </div>
+                </div>
+
+                <div class="hr" style="margin:12px 0;"></div>
+
+                <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                    <div style="font-weight:900;" th:text="#{checkout.summary.total}">Total</div>
+                    <div style="font-weight:900; font-size:18px;"
+                         th:text="${#numbers.formatDecimal(order.totalAmount != null ? order.totalAmount.value : 0, 1, 2)} + ' ' + ${currencySymbol}">
+                        0.00 zł
+                    </div>
+                </div>
+
+                <div class="hr" style="margin:12px 0;"></div>
+
+                <div th:if="${shipment != null}">
+                    <div style="font-weight:900; margin-bottom:8px;" th:text="#{order.delivery}">Delivery</div>
+
+                    <div class="muted">
+                        <span th:text="#{order.delivery.status}">Status</span>:
+                        <strong th:text="${shipment.status}">CREATED</strong>
+                    </div>
+                    <div class="muted">
+                        <span th:text="#{order.delivery.carrier}">Carrier</span>:
+                        <strong th:text="${shipment.carrier}">DHL</strong>
+                    </div>
+                    <div class="muted">
+                        <span th:text="#{order.delivery.tracking}">Tracking</span>:
+                        <strong th:text="${shipment.trackingNumber != null ? shipment.trackingNumber.value : '—'}">—</strong>
+                    </div>
+                </div>
+
+                <div th:if="${shipment == null}" class="muted small">
+                    <span th:text="#{order.delivery.none}">Shipment not created yet.</span>
+                </div>
+            </aside>
+        </div>
+
+    </div>
+
+</div>
+</body>
+</html>

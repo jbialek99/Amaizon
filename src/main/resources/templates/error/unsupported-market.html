@@ -1,0 +1,33 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security"
+      th:lang="${currentLocale != null ? currentLocale.language : 'en'}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{error.title}">Error</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+
+    <div th:replace="fragments/navbar :: navbar"></div>
+
+    <div class="card" style="margin-top:14px;">
+        <h1 class="h1" th:text="#{error.market.title}">Unsupported market</h1>
+        <p class="muted" th:text="#{error.market.subtitle}">This domain is not supported.</p>
+
+        <div class="hr"></div>
+
+        <div class="alert danger">
+            <strong th:text="${status}">404</strong>
+            <div th:text="${marketError}">Market error</div>
+        </div>
+
+        <div class="hr"></div>
+
+        <a class="btn" th:href="@{/home}" th:text="#{nav.home}">Home</a>
+    </div>
+</div>
+</body>
+</html>

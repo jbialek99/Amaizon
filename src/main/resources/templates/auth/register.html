@@ -1,0 +1,96 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/extras/spring-security"
+      th:lang="${currentLocale != null ? currentLocale.language : 'en'}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{auth.register.title}">Register</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+
+    <div th:replace="fragments/navbar :: navbar"></div>
+
+    <div style="display:flex; justify-content:center; margin-top:14px;">
+        <div class="card" style="width:min(520px, 100%);">
+            <h1 class="h1" th:text="#{auth.register.title}">Register</h1>
+            <div class="muted" th:text="#{auth.register.subtitle}">Create account</div>
+
+            <div class="hr"></div>
+
+            <form th:action="@{/register}" method="post" th:object="${form}" class="form">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                <div class="alert danger" th:if="${#fields.hasErrors('*')}" style="margin-bottom:12px;">
+                    <strong th:text="#{auth.register.validation}">Please fix the form errors</strong>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div class="field" style="margin-top:0;">
+                        <label class="label" th:text="#{auth.firstName}">First name</label>
+                        <input class="input" type="text" th:field="*{firstName}" autocomplete="given-name" required>
+                        <ul class="field-errors" th:if="${#fields.hasErrors('firstName')}">
+                            <li th:each="e : ${#fields.errors('firstName')}" th:text="${e}"></li>
+                        </ul>
+                    </div>
+
+                    <div class="field" style="margin-top:0;">
+                        <label class="label" th:text="#{auth.lastName}">Last name</label>
+                        <input class="input" type="text" th:field="*{lastName}" autocomplete="family-name" required>
+                        <ul class="field-errors" th:if="${#fields.hasErrors('lastName')}">
+                            <li th:each="e : ${#fields.errors('lastName')}" th:text="${e}"></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label" th:text="#{auth.email}">Email</label>
+                    <input class="input" type="email" th:field="*{email}" autocomplete="username" required>
+                    <ul class="field-errors" th:if="${#fields.hasErrors('email')}">
+                        <li th:each="e : ${#fields.errors('email')}" th:text="${e}"></li>
+                    </ul>
+                </div>
+
+                <div class="field">
+                    <label class="label" th:text="#{auth.password}">Password</label>
+                    <input class="input" type="password" th:field="*{password}" autocomplete="new-password" required>
+
+                    <ul class="field-errors" th:if="${#fields.hasErrors('password')}">
+                        <li th:each="e : ${#fields.errors('password')}" th:text="${e}"></li>
+                    </ul>
+
+                    <div class="muted small" th:if="${!#fields.hasErrors('password')}"
+                         th:text="#{auth.register.passwordHint}"
+                         style="margin-top:8px;">
+                        Minimum 8 characters and at least 2 digits.
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label" th:text="#{auth.confirmPassword}">Confirm password</label>
+                    <input class="input" type="password" th:field="*{confirmPassword}" autocomplete="new-password" required>
+
+                    <ul class="field-errors" th:if="${#fields.hasErrors('confirmPassword')}">
+                        <li th:text="${#fields.errors('confirmPassword')[0]}"></li>
+                    </ul>
+                </div>
+
+                <button type="submit" class="btn primary w-100" th:text="#{auth.register.submit}" style="margin-top:12px;">
+                    Create account
+                </button>
+
+                <div class="hr" style="margin:14px 0;"></div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <span class="muted" th:text="#{auth.register.haveAccount}">Already have an account?</span>
+                    <a class="btn" th:href="@{/login}" th:text="#{auth.register.goLogin}">Go to login</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

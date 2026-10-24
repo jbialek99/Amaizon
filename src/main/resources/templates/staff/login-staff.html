@@ -1,0 +1,72 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:lang="${market != null ? market.locale.language : 'en'}">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title th:text="#{staff.login.title}">Staff Login</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}"/>
+</head>
+<body class="page">
+<div class="container">
+
+    <div class="card" style="margin-top:14px;">
+
+
+        <div class="alert"
+             th:if="${param.error != null}"
+             style="margin-bottom:12px;">
+            <strong th:text="#{staff.login.error}">
+                Błędne dane logowania.
+            </strong>
+        </div>
+
+        <div class="alert"
+             th:if="${param.logout != null}"
+             style="margin-bottom:12px;">
+            <strong th:text="#{staff.login.logout}">
+                Wylogowano.
+            </strong>
+        </div>
+
+        <div class="hr" th:if="${param.error != null || param.logout != null}"></div>
+
+        <h1 class="h1" th:text="#{staff.login.heading}">Login STAFF</h1>
+        <div class="muted" th:text="#{staff.login.subtitle}">Panel administracyjny</div>
+
+        <div class="hr"></div>
+
+        <form th:action="@{/home/staff}" method="post" class="form">
+            <input type="hidden" th:if="${_csrf != null}"
+                   th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+            <div class="field" style="margin-top:0;">
+                <label class="label" th:text="#{staff.login.email}">Email</label>
+                <input class="input" name="email" type="text" autocomplete="username" required/>
+            </div>
+
+            <div class="field">
+                <label class="label" th:text="#{staff.login.password}">Hasło</label>
+                <input class="input" name="password" type="password" autocomplete="current-password" required/>
+            </div>
+
+            <button class="btn primary" type="submit" th:text="#{staff.login.submit}">
+                Zaloguj
+            </button>
+        </form>
+
+        <div class="hr" style="margin:14px 0;"></div>
+
+        <div style="display:flex; justify-content:flex-end;">
+            <a class="btn"
+               th:href="@{/home}"
+               th:text="#{staff.login.backHome}">
+                Powrót na stronę główną
+            </a>
+        </div>
+
+    </div>
+
+</div>
+</body>
+</html>
