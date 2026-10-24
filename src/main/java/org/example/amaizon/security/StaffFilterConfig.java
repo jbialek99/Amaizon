@@ -10,7 +10,8 @@ public class StaffFilterConfig {
     @Bean
     public StaffMarketAccessFilter staffMarketAccessFilter(
             MarketResolver marketResolver,
-            AuthorizationService authorizationService) {
-        return new StaffMarketAccessFilter(marketResolver, authorizationService);
+            AuthorizationService authorizationService,
+            org.example.amaizon.repositories.UserRepository userRepository) {
+        return new StaffMarketAccessFilter(marketResolver, authorizationService, userRepository);
     }
 }

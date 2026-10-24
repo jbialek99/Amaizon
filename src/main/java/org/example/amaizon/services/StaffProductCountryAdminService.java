@@ -90,7 +90,7 @@ public class StaffProductCountryAdminService {
 
         pc.createPrice(form.getPrice(), ProductPriceStatus.CURRENT, null);
 
-        productStockRepository.findByProductCountry(pc).ifPresentOrElse(
+        productStockRepository.findByProductCountryForUpdate(pc).ifPresentOrElse(
                 existing -> {
                     long desired = form.getInitialQuantityAvailable();
                     long current = existing.getQuantityAvailable();
