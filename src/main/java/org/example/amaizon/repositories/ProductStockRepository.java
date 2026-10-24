@@ -22,4 +22,17 @@ public interface ProductStockRepository extends JpaRepository<ProductStock, Long
     Optional<ProductStock> findByProductCountryForUpdate(@Param("pc") ProductCountry pc);
 
     Optional<ProductStock> findByProductCountry(ProductCountry productCountry);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select ps
+            from ProductStock ps
+            join ps.productCountry pc
+            where pc.product.id = :productId
+              and pc.country.id = :countryId
+            """)
+    Optional<ProductStock> findByProductIdAndCountryIdForUpdate(
+            @Param("productId") long productId,
+            @Param("countryId") long countryId
+    );
 }

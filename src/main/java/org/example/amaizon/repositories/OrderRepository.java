@@ -2,6 +2,8 @@ package org.example.amaizon.repositories;
 
 import org.example.amaizon.model.entity.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -27,4 +29,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
 
 
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select o from Order o
+            where o.stableId = :stableId
+            """)
+    Optional<Order> findByStableIdForUpdate(@Param("stableId") UUID stableId);
 }

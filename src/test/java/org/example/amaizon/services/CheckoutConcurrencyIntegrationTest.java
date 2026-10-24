@@ -5,9 +5,11 @@ import org.example.amaizon.model.entity.Cart;
 import org.example.amaizon.model.enums.Carrier;
 import org.example.amaizon.repositories.CartRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -31,6 +33,15 @@ class CheckoutConcurrencyIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+
+    private Long cleanupCartId;
+    private Long cleanupProductCountryId;
+    private String cleanupEmail;
+    private Integer cleanupAvailableBefore;
+    private Integer cleanupReservedBefore;
+
     @Test
     void concurrentCheckoutCreatesExactlyOneOrder() throws Exception {
         Long productCountryId = jdbcTemplate.queryForObject(
@@ -52,9 +63,14 @@ class CheckoutConcurrencyIntegrationTest {
 
         assertTrue(availableBefore != null && availableBefore >= 1);
 
+        cleanupProductCountryId = productCountryId;
+        cleanupAvailableBefore = availableBefore;
+        cleanupReservedBefore = reservedBefore;
+
         UUID cartStableId = UUID.randomUUID();
         UUID guestToken = UUID.randomUUID();
         String contactEmail = "race-" + UUID.randomUUID() + "@example.com";
+        cleanupEmail = contactEmail;
 
         Long cartId = jdbcTemplate.queryForObject(
                 """
@@ -81,6 +97,7 @@ class CheckoutConcurrencyIntegrationTest {
         );
 
         assertTrue(cartId != null && cartId > 0);
+        cleanupCartId = cartId;
 
         int insertedItems = jdbcTemplate.update(
                 """
@@ -188,6 +205,130 @@ class CheckoutConcurrencyIntegrationTest {
         assertEquals(reservedBefore + 1, reservedAfter);
     }
 
+    @AfterEach
+    void cleanupTestFixtures() {
+        if (cleanupCartId == null) {
+            return;
+        }
+
+        transactionTemplate.executeWithoutResult(transaction -> {
+            Long orderCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM orders WHERE contact_email = ?",
+                    Long.class,
+                    cleanupEmail
+            );
+
+            if (orderCount == null || orderCount > 1) {
+                throw new IllegalStateException("Unexpected test order count");
+            }
+
+            Integer currentAvailable = jdbcTemplate.queryForObject(
+                    """
+                    SELECT quantity_available
+                    FROM product_stocks
+                    WHERE product_country_id = ?
+                    FOR UPDATE
+                    """,
+                    Integer.class,
+                    cleanupProductCountryId
+            );
+
+            Integer currentReserved = jdbcTemplate.queryForObject(
+                    """
+                    SELECT quantity_reserved
+                    FROM product_stocks
+                    WHERE product_country_id = ?
+                    """,
+                    Integer.class,
+                    cleanupProductCountryId
+            );
+
+            int expectedAvailable = cleanupAvailableBefore - orderCount.intValue();
+            int expectedReserved = cleanupReservedBefore + orderCount.intValue();
+
+            if (currentAvailable == null
+                    || currentReserved == null
+                    || currentAvailable != expectedAvailable
+                    || currentReserved != expectedReserved) {
+                throw new IllegalStateException(
+                        "Stock changed unexpectedly; refusing cleanup"
+                );
+            }
+
+            if (orderCount == 1) {
+                Long orderId = jdbcTemplate.queryForObject(
+                        "SELECT id FROM orders WHERE contact_email = ?",
+                        Long.class,
+                        cleanupEmail
+                );
+
+                if (orderId == null) {
+                    throw new IllegalStateException("Test order missing");
+                }
+
+                jdbcTemplate.update(
+                        "DELETE FROM order_items WHERE order_id = ?",
+                        orderId
+                );
+
+                jdbcTemplate.update(
+                        "DELETE FROM shipments WHERE order_id = ?",
+                        orderId
+                );
+
+                if (jdbcTemplate.update(
+                        "DELETE FROM orders WHERE id = ?",
+                        orderId
+                ) != 1) {
+                    throw new IllegalStateException("Test order cleanup failed");
+                }
+
+                if (jdbcTemplate.update(
+                        """
+                        UPDATE product_stocks
+                        SET quantity_available = quantity_available + 1,
+                            quantity_reserved = quantity_reserved - 1
+                        WHERE product_country_id = ?
+                          AND quantity_reserved >= 1
+                        """,
+                        cleanupProductCountryId
+                ) != 1) {
+                    throw new IllegalStateException("Stock cleanup failed");
+                }
+            }
+
+            jdbcTemplate.update(
+                    "DELETE FROM cart_items WHERE cart_id = ?",
+                    cleanupCartId
+            );
+
+            if (jdbcTemplate.update(
+                    "DELETE FROM carts WHERE id = ?",
+                    cleanupCartId
+            ) != 1) {
+                throw new IllegalStateException("Test cart cleanup failed");
+            }
+        });
+
+        Integer availableAfterCleanup = jdbcTemplate.queryForObject(
+                "SELECT quantity_available FROM product_stocks WHERE product_country_id = ?",
+                Integer.class,
+                cleanupProductCountryId
+        );
+
+        Integer reservedAfterCleanup = jdbcTemplate.queryForObject(
+                "SELECT quantity_reserved FROM product_stocks WHERE product_country_id = ?",
+                Integer.class,
+                cleanupProductCountryId
+        );
+
+        assertEquals(cleanupAvailableBefore, availableAfterCleanup);
+        assertEquals(cleanupReservedBefore, reservedAfterCleanup);
+
+        System.out.println("=== CHECKOUT TEST CLEANUP ===");
+        System.out.println("Stock restored: true");
+        System.out.println("Test order and cart removed: true");
+    }
     private boolean attemptCheckout(
             Long cartId,
             String contactEmail,
