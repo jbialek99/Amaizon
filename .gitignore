@@ -45,3 +45,11 @@ audit-report.txt
 *.tmp
 .DS_Store
 Thumbs.db
+.maven-test-cache/
+.local-audit/
+.local-reports/
+.local-backups/
+shipping-test-report.txt
+.env.demo
+.env.demo.*
+!.env.demo.example
