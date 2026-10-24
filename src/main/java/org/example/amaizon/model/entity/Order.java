@@ -247,24 +247,40 @@ public class Order extends AuditableEntity {
     }
 
     public void confirm() {
-        ensureMutable();
+        if (status != OrderStatus.NEW) {
+            throw new IllegalStateException("Only new orders can be confirmed");
+        }
+        if (items.isEmpty() || shipment == null) {
+            throw new IllegalStateException("Order is incomplete");
+        }
         this.status = OrderStatus.CONFIRMED;
         this.confirmedAt = Instant.now();
     }
 
     public void cancel(String reason) {
-        ensureNotFinalized();
+        if (status != OrderStatus.NEW && status != OrderStatus.CONFIRMED) {
+            throw new IllegalStateException("Order cannot be cancelled in status " + status);
+        }
+        if (payment != null && payment.getStatus() == org.example.amaizon.model.enums.PaymentStatus.SUCCESS) {
+            throw new IllegalStateException("Paid order requires refund handling");
+        }
         this.status = OrderStatus.CANCELLED;
         this.cancelledAt = Instant.now();
     }
 
     public Payment startPayment(BigDecimal amount) {
-        ensureNotFinalized();
+        if (status != OrderStatus.CONFIRMED) {
+            throw new IllegalStateException("Only confirmed orders can start payment");
+        }
         if (this.payment != null) ex(KEY_PAYMENT_ALREADY_EXISTS);
 
         BigDecimal a = (amount == null)
                 ? this.totalAmount.getValue()
                 : mapOfTotalAmount(amount).getValue();
+
+        if (a.compareTo(this.totalAmount.getValue()) != 0) {
+            throw new IllegalArgumentException("Payment amount does not match order total");
+        }
 
         return Payment._createForOrder(this, a, this.currency, null);
     }
@@ -301,18 +317,20 @@ public class Order extends AuditableEntity {
     // ============================================================
 
     void _markPaid(Instant paidAt) {
-        if (this.status == OrderStatus.CANCELLED || this.status == OrderStatus.DELIVERED) {
-            ex(KEY_ORDER_LOCKED, this.status);
+        if (this.status != OrderStatus.CONFIRMED) {
+            throw new IllegalStateException("Only confirmed orders can become paid");
         }
-        if (this.status == OrderStatus.PAID) return;
 
         this.status = OrderStatus.PAID;
         this.paidAt = (paidAt != null) ? paidAt : Instant.now();
     }
 
     void _markShipped() {
-        if (this.status == OrderStatus.CANCELLED || this.status == OrderStatus.DELIVERED) {
-            ex(KEY_ORDER_LOCKED, this.status);
+        if (this.status != OrderStatus.PAID) {
+            throw new IllegalStateException("Only paid orders can be shipped");
+        }
+        if (payment == null || payment.getStatus() != org.example.amaizon.model.enums.PaymentStatus.SUCCESS) {
+            throw new IllegalStateException("Successful payment required");
         }
         this.status = OrderStatus.SHIPPED;
     }

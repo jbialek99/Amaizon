@@ -68,6 +68,11 @@ class OrderLifecycleServiceTest {
 
     @Test
     void shippingCommitsReservedStock() {
+        Payment payment = mock(Payment.class);
+        when(order.getStatus()).thenReturn(OrderStatus.PAID);
+        when(order.getPayment()).thenReturn(payment);
+        when(payment.getStatus()).thenReturn(org.example.amaizon.model.enums.PaymentStatus.SUCCESS);
+
         service.ship(stableId);
 
         verify(stock).commitReserved(2);
@@ -149,4 +154,63 @@ class OrderLifecycleServiceTest {
 
         verifyNoInteractions(stocks);
     }
+    @Test
+    void unpaidOrderCannotBeShipped() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> service.ship(stableId)
+        );
+
+        verifyNoInteractions(stocks);
+        verify(shipment, never()).markShipped();
+    }
+
+    @Test
+    void paidOrderCannotBeCancelled() {
+        when(order.getStatus()).thenReturn(OrderStatus.PAID);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> service.cancel(stableId)
+        );
+
+        verifyNoInteractions(stocks);
+        verify(shipment, never()).cancel();
+    }
+
+    @Test
+    void shippedOrderCanBeDelivered() {
+        when(order.getStatus()).thenReturn(OrderStatus.SHIPPED);
+        when(shipment.getStatus()).thenReturn(ShipmentStatus.SHIPPED);
+
+        service.deliver(stableId);
+
+        verify(shipment).markDelivered();
+        verifyNoInteractions(stocks);
+    }
+
+    @Test
+    void unpaidOrderCannotBeDelivered() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> service.deliver(stableId)
+        );
+
+        verify(shipment, never()).markDelivered();
+        verifyNoInteractions(stocks);
+    }
+
+    @Test
+    void deliveredOrderCannotBeDeliveredAgain() {
+        when(order.getStatus()).thenReturn(OrderStatus.DELIVERED);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> service.deliver(stableId)
+        );
+
+        verify(shipment, never()).markDelivered();
+        verifyNoInteractions(stocks);
+    }
+
 }

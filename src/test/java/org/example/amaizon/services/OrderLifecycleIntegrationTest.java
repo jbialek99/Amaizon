@@ -66,6 +66,11 @@ class OrderLifecycleIntegrationTest {
     void shippingConsumesReservedStockExactlyOnce() {
         TestOrder testOrder = createTestOrder();
 
+        Order order = entityManager.find(Order.class, testOrder.orderId());
+        order.confirm();
+        order.startPayment(null).markSuccess("DEMO-PAYMENT-123456");
+        entityManager.flush();
+
         lifecycleService.ship(testOrder.stableId());
         entityManager.flush();
 
@@ -107,6 +112,95 @@ class OrderLifecycleIntegrationTest {
         assertEquals(testOrder.reservedBefore(), reserved(testOrder.stockId()));
     }
 
+    @Test
+    void unpaidOrderCannotBeShippedOrDelivered() {
+        TestOrder testOrder = createTestOrder();
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> lifecycleService.ship(testOrder.stableId())
+        );
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> lifecycleService.deliver(testOrder.stableId())
+        );
+
+        entityManager.flush();
+
+        assertEquals("NEW", orderStatus(testOrder.orderId()));
+        assertEquals("CREATED", shipmentStatus(testOrder.orderId()));
+        assertEquals(testOrder.availableBefore() - 1, available(testOrder.stockId()));
+        assertEquals(testOrder.reservedBefore() + 1, reserved(testOrder.stockId()));
+    }
+
+    @Test
+    void confirmedOrderRequiresPaymentBeforeShipping() {
+        TestOrder testOrder = createTestOrder();
+
+        Order order = entityManager.find(Order.class, testOrder.orderId());
+        order.confirm();
+        entityManager.flush();
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> lifecycleService.ship(testOrder.stableId())
+        );
+
+        assertEquals("CONFIRMED", orderStatus(testOrder.orderId()));
+        assertEquals("CREATED", shipmentStatus(testOrder.orderId()));
+    }
+
+    @Test
+    void completedOrderCannotBeShippedOrDeliveredAgain() {
+        TestOrder testOrder = createTestOrder();
+
+        Order order = entityManager.find(Order.class, testOrder.orderId());
+
+        order.confirm();
+        order.startPayment(null).markSuccess("DEMO-DELIVERY-123456");
+        entityManager.flush();
+
+        lifecycleService.ship(testOrder.stableId());
+        lifecycleService.deliver(testOrder.stableId());
+        entityManager.flush();
+
+        assertEquals("DELIVERED", orderStatus(testOrder.orderId()));
+        assertEquals("DELIVERED", shipmentStatus(testOrder.orderId()));
+
+        assertEquals(testOrder.availableBefore() - 1, available(testOrder.stockId()));
+        assertEquals(testOrder.reservedBefore(), reserved(testOrder.stockId()));
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> lifecycleService.ship(testOrder.stableId())
+        );
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> lifecycleService.deliver(testOrder.stableId())
+        );
+    }
+
+    @Test
+    void paidOrderCannotBeCancelledWithoutRefund() {
+        TestOrder testOrder = createTestOrder();
+
+        Order order = entityManager.find(Order.class, testOrder.orderId());
+        order.confirm();
+        order.startPayment(null).markSuccess("DEMO-CANCEL-123456");
+        entityManager.flush();
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> lifecycleService.cancel(testOrder.stableId())
+        );
+
+        assertEquals("PAID", orderStatus(testOrder.orderId()));
+        assertEquals("CREATED", shipmentStatus(testOrder.orderId()));
+        assertEquals(testOrder.availableBefore() - 1, available(testOrder.stockId()));
+        assertEquals(testOrder.reservedBefore() + 1, reserved(testOrder.stockId()));
+    }
     private TestOrder createTestOrder() {
         Long stockId = jdbc.queryForObject(
                 """

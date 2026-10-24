@@ -136,18 +136,16 @@ public class Shipment extends AuditableEntity {
     }
 
     public void markShipped() {
-        ensureNotFinal();
-
-        if (this.status == ShipmentStatus.SHIPPED || this.status == ShipmentStatus.DELIVERED) {
-            return;
+        if (this.status != ShipmentStatus.CREATED) {
+            throw new IllegalStateException("Only created shipments can be shipped");
+        }
+        if (order == null) {
+            throw new IllegalStateException("Shipment order missing");
         }
 
+        order._markShipped();
         this.status = ShipmentStatus.SHIPPED;
         this.shippedAt = Instant.now();
-
-        if (order != null) {
-            order._markShipped();
-        }
     }
 
     public void markDelivered() {
@@ -162,7 +160,9 @@ public class Shipment extends AuditableEntity {
     }
 
     public void cancel() {
-        ensureNotFinal();
+        if (status != ShipmentStatus.CREATED) {
+            throw new IllegalStateException("Only created shipments can be cancelled");
+        }
         this.status = ShipmentStatus.CANCELLED;
     }
 

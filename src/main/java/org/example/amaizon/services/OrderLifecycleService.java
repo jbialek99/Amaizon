@@ -33,10 +33,14 @@ public class OrderLifecycleService {
     public void cancel(UUID stableId) {
         Order order = loadLocked(stableId);
 
-        if (order.getStatus() == OrderStatus.CANCELLED
-                || order.getStatus() == OrderStatus.SHIPPED
-                || order.getStatus() == OrderStatus.DELIVERED) {
+        if (order.getStatus() != OrderStatus.NEW
+                && order.getStatus() != OrderStatus.CONFIRMED) {
             throw new IllegalStateException("Order cannot be cancelled");
+        }
+
+        if (order.getPayment() != null
+                && order.getPayment().getStatus() == org.example.amaizon.model.enums.PaymentStatus.SUCCESS) {
+            throw new IllegalStateException("Paid order cannot be cancelled without refund");
         }
 
         Shipment shipment = order.getShipment();
@@ -57,10 +61,13 @@ public class OrderLifecycleService {
     public void ship(UUID stableId) {
         Order order = loadLocked(stableId);
 
-        if (order.getStatus() == OrderStatus.CANCELLED
-                || order.getStatus() == OrderStatus.SHIPPED
-                || order.getStatus() == OrderStatus.DELIVERED) {
-            throw new IllegalStateException("Order cannot be shipped");
+        if (order.getStatus() != OrderStatus.PAID) {
+            throw new IllegalStateException("Only paid orders can be shipped");
+        }
+
+        if (order.getPayment() == null
+                || order.getPayment().getStatus() != org.example.amaizon.model.enums.PaymentStatus.SUCCESS) {
+            throw new IllegalStateException("Successful payment required before shipping");
         }
 
         Shipment shipment = order.getShipment();
@@ -76,6 +83,22 @@ public class OrderLifecycleService {
         shipment.markShipped();
     }
 
+    @Transactional
+    public void deliver(UUID stableId) {
+        Order order = loadLocked(stableId);
+
+        if (order.getStatus() != OrderStatus.SHIPPED) {
+            throw new IllegalStateException("Only shipped orders can be delivered");
+        }
+
+        Shipment shipment = order.getShipment();
+
+        if (shipment == null || shipment.getStatus() != ShipmentStatus.SHIPPED) {
+            throw new IllegalStateException("Shipment is not ready for delivery");
+        }
+
+        shipment.markDelivered();
+    }
     private Order loadLocked(UUID stableId) {
         if (stableId == null) {
             throw new IllegalArgumentException("Order identifier required");

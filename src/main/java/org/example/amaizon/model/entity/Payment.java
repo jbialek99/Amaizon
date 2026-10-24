@@ -159,13 +159,19 @@ public class Payment extends AuditableEntity {
 
         ensureNotFinal();
 
-        this.transactionId = mapOfTransactionId(transactionId);
-        this.status = PaymentStatus.SUCCESS;
-        this.paidAt = Instant.now();
+        Instant successTime = Instant.now();
 
-        if (this.order != null) {
-            this.order._markPaid(this.paidAt);
+        if (this.order == null) {
+            throw new IllegalStateException("Payment order missing");
         }
+        if (this.order.getStatus() != org.example.amaizon.model.enums.OrderStatus.CONFIRMED) {
+            throw new IllegalStateException("Order is not ready for payment");
+        }
+
+        this.transactionId = mapOfTransactionId(transactionId);
+        this.order._markPaid(successTime);
+        this.status = PaymentStatus.SUCCESS;
+        this.paidAt = successTime;
     }
 
     public void markFailed(String reason) {
